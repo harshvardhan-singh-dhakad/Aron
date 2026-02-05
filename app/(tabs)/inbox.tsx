@@ -18,6 +18,42 @@ type Application = {
   applicantId: string;
 };
 
+const mockReceived = [
+  {
+    id: '1',
+    listingId: '1',
+    listingTitle: 'Plumber Needed',
+    status: 'pending' as const,
+    createdAt: new Date(),
+    applicantName: 'John Doe',
+    ownerId: 'user1',
+    applicantId: 'user2',
+  },
+  {
+    id: '2',
+    listingId: '2',
+    listingTitle: 'Software Developer Job',
+    status: 'accepted' as const,
+    createdAt: new Date(),
+    applicantName: 'Jane Smith',
+    ownerId: 'user1',
+    applicantId: 'user3',
+  },
+];
+
+const mockSent = [
+  {
+    id: '3',
+    listingId: '3',
+    listingTitle: 'Apartment for Rent',
+    status: 'pending' as const,
+    createdAt: new Date(),
+    applicantName: 'Current User',
+    ownerId: 'user3',
+    applicantId: 'user1',
+  },
+];
+
 function ApplicationCard({ application }: { application: Application }) {
   const postedAt = application.createdAt ? formatDistanceToNow(application.createdAt.toDate(), { addSuffix: true }) : '...';
 
@@ -107,7 +143,10 @@ export default function InboxScreen() {
   const { data: receivedApps, loading: isLoadingReceived } = useCollection<Application>(receivedQuery);
   const { data: sentApps, loading: isLoadingSent } = useCollection<Application>(sentQuery);
 
-  const applications = activeTab === 'received' ? receivedApps : sentApps;
+  const displayReceived = receivedApps && receivedApps.length > 0 ? receivedApps : mockReceived;
+  const displaySent = sentApps && sentApps.length > 0 ? sentApps : mockSent;
+
+  const applications = activeTab === 'received' ? displayReceived : displaySent;
   const loading = activeTab === 'received' ? isLoadingReceived : isLoadingSent;
 
   if (!user) {

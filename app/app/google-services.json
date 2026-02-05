@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "619017115616",
+    "firebase_url": "https://studio-5286972787-462c3-default-rtdb.firebaseio.com",
+    "project_id": "studio-5286972787-462c3",
+    "storage_bucket": "studio-5286972787-462c3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:619017115616:android:56b8f99b422b85ff2f7d85",
+        "android_client_info": {
+          "package_name": "com.yourusername.selfwork"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhcuER8SHM9XuoAuAaBZW8ZsQVbrUiOvI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
