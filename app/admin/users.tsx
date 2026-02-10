@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,114 +7,214 @@ import {
     TouchableOpacity,
     useColorScheme,
     Alert,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { BadgeCheck, Trash2, Phone } from 'lucide-react-native';
+import { collection, getDocs, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { User, Phone, Shield, ShieldOff, Clock, CheckCircle, XCircle, Users } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Mock users
-const mockUsers = [
-    {
-        id: '1',
-        name: 'Rahul Sharma',
-        phone: '+91 9876543210',
-        location: 'Jaipur, RJ',
-        verified: true,
-        listingsCount: 5,
-        createdAt: new Date(),
-    },
-    {
-        id: '2',
-        name: 'Priya Singh',
-        phone: '+91 9876543211',
-        location: 'Lucknow, UP',
-        verified: false,
-        listingsCount: 2,
-        createdAt: new Date(),
-    },
-    {
-        id: '3',
-        name: 'Amit Kumar',
-        phone: '+91 9876543212',
-        location: 'Indore, MP',
-        verified: true,
-        listingsCount: 8,
-        createdAt: new Date(),
-    },
-];
+interface UserData {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    location: string;
+    verificationStatus: 'none' | 'pending' | 'approved' | 'rejected';
+    isAdmin: boolean;
+    profileCompleted: boolean;
+    createdAt: any;
+}
 
 export default function AdminUsers() {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme];
+    const insets = useSafeAreaInsets();
 
-    const handleDelete = (id: string) => {
+    const [users, setUsers] = useState<UserData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const fetchUsers = async () => {
+        try {
+            const q = query(collection(db, 'users'));
+            const snapshot = await getDocs(q);
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as UserData[];
+            setUsers(data);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const toggleAdmin = async (userId: string, currentStatus: boolean) => {
         Alert.alert(
-            'Delete User',
-            'This will delete all user data including their listings. This action cannot be undone.',
+            currentStatus ? 'Remove Admin' : 'Make Admin',
+            currentStatus
+                ? 'Remove admin privileges from this user?'
+                : 'Give admin privileges to this user?',
             [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => console.log('Deleted:', id) },
+                {
+                    text: 'Confirm',
+                    onPress: async () => {
+                        setActionLoading(userId);
+                        try {
+                            await updateDoc(doc(db, 'users', userId), {
+                                isAdmin: !currentStatus,
+                                updatedAt: serverTimestamp(),
+                            });
+                            setUsers(prev => prev.map(u =>
+                                u.id === userId ? { ...u, isAdmin: !currentStatus } : u
+                            ));
+                            Alert.alert('Success', currentStatus ? 'Admin removed' : 'Admin added');
+                        } catch (error) {
+                            console.error('Error updating admin status:', error);
+                            Alert.alert('Error', 'Failed to update admin status');
+                        } finally {
+                            setActionLoading(null);
+                        }
+                    },
+                },
             ]
         );
     };
 
+    const getVerificationBadge = (status: string) => {
+        switch (status) {
+            case 'approved':
+                return { icon: CheckCircle, color: '#22C55E', label: 'Verified' };
+            case 'pending':
+                return { icon: Clock, color: '#F59E0B', label: 'Pending' };
+            case 'rejected':
+                return { icon: XCircle, color: '#EF4444', label: 'Rejected' };
+            default:
+                return { icon: Clock, color: '#9CA3AF', label: 'Not Verified' };
+        }
+    };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.centerContent, { backgroundColor: '#F3F4F6' }]}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading users...</Text>
+            </View>
+        );
+    }
+
+    const verifiedCount = users.filter(u => u.verificationStatus === 'approved').length;
+    const adminCount = users.filter(u => u.isAdmin).length;
+
     return (
         <ScrollView
-            style={[styles.container, { backgroundColor: colors.background }]}
-            showsVerticalScrollIndicator={false}
+            style={[styles.container, { backgroundColor: '#F3F4F6' }]}
+            contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={() => {
+                    setRefreshing(true);
+                    fetchUsers();
+                }} />
+            }
         >
-            <View style={styles.content}>
-                <View style={[styles.header, { backgroundColor: colors.card }]}>
-                    <Text style={[styles.headerText, { color: colors.text }]}>
-                        {mockUsers.length} Users
-                    </Text>
+            {/* Stats */}
+            <View style={styles.statsRow}>
+                <View style={[styles.statCard, { backgroundColor: '#3B82F6' }]}>
+                    <Users size={20} color="#FFF" />
+                    <Text style={styles.statNumber}>{users.length}</Text>
+                    <Text style={styles.statLabel}>Total Users</Text>
                 </View>
+                <View style={[styles.statCard, { backgroundColor: '#22C55E' }]}>
+                    <CheckCircle size={20} color="#FFF" />
+                    <Text style={styles.statNumber}>{verifiedCount}</Text>
+                    <Text style={styles.statLabel}>Verified</Text>
+                </View>
+                <View style={[styles.statCard, { backgroundColor: '#F97316' }]}>
+                    <Shield size={20} color="#FFF" />
+                    <Text style={styles.statNumber}>{adminCount}</Text>
+                    <Text style={styles.statLabel}>Admins</Text>
+                </View>
+            </View>
 
-                {mockUsers.map((user) => (
-                    <View key={user.id} style={[styles.card, { backgroundColor: colors.card }]}>
-                        <View style={styles.cardHeader}>
-                            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.avatarText}>{user.name.charAt(0)}</Text>
-                            </View>
-                            <View style={styles.cardInfo}>
-                                <View style={styles.nameRow}>
-                                    <Text style={[styles.name, { color: colors.text }]}>{user.name}</Text>
-                                    {user.verified && <BadgeCheck size={16} color={colors.accent} />}
+            {/* Users List */}
+            <View style={styles.listContainer}>
+                {users.map((user) => {
+                    const verification = getVerificationBadge(user.verificationStatus);
+                    const VerificationIcon = verification.icon;
+
+                    return (
+                        <View key={user.id} style={[styles.card, { backgroundColor: '#FFFFFF' }]}>
+                            <View style={styles.userRow}>
+                                {/* Avatar */}
+                                <View style={[styles.avatar, { backgroundColor: user.isAdmin ? '#F97316' : colors.primary }]}>
+                                    {user.isAdmin ? (
+                                        <Shield size={22} color="#FFF" />
+                                    ) : (
+                                        <User size={22} color="#FFF" />
+                                    )}
                                 </View>
-                                <Text style={[styles.phone, { color: colors.textSecondary }]}>{user.phone}</Text>
-                                <Text style={[styles.location, { color: colors.textSecondary }]}>{user.location}</Text>
-                            </View>
-                        </View>
 
-                        <View style={[styles.stats, { borderColor: colors.border }]}>
-                            <View style={styles.stat}>
-                                <Text style={[styles.statValue, { color: colors.primary }]}>{user.listingsCount}</Text>
-                                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Listings</Text>
+                                {/* User Info */}
+                                <View style={styles.userInfo}>
+                                    <Text style={[styles.userName, { color: colors.text }]}>
+                                        {user.name || 'Unknown User'}
+                                        {user.isAdmin && <Text style={styles.adminTag}> (Admin)</Text>}
+                                    </Text>
+
+                                    <View style={styles.phoneRow}>
+                                        <Phone size={12} color={colors.textSecondary} />
+                                        <Text style={[styles.userPhone, { color: colors.textSecondary }]}>
+                                            {user.phoneNumber}
+                                        </Text>
+                                    </View>
+
+                                    {/* Verification Status */}
+                                    <View style={[styles.verificationBadge, { backgroundColor: `${verification.color}15` }]}>
+                                        <VerificationIcon size={14} color={verification.color} />
+                                        <Text style={[styles.verificationText, { color: verification.color }]}>
+                                            {verification.label}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Admin Toggle */}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.adminBtn,
+                                        { backgroundColor: user.isAdmin ? '#FEE2E2' : '#DCFCE7' }
+                                    ]}
+                                    onPress={() => toggleAdmin(user.id, user.isAdmin)}
+                                    disabled={actionLoading === user.id}
+                                >
+                                    {actionLoading === user.id ? (
+                                        <ActivityIndicator size="small" color={colors.primary} />
+                                    ) : user.isAdmin ? (
+                                        <ShieldOff size={18} color="#EF4444" />
+                                    ) : (
+                                        <Shield size={18} color="#22C55E" />
+                                    )}
+                                </TouchableOpacity>
                             </View>
-                            <View style={styles.stat}>
-                                <Text style={[styles.statValue, { color: colors.primary }]}>
-                                    {user.createdAt.toLocaleDateString()}
+
+                            {/* Location */}
+                            {user.location && (
+                                <Text style={[styles.location, { color: colors.textSecondary }]}>
+                                    📍 {user.location}
                                 </Text>
-                                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Joined</Text>
-                            </View>
+                            )}
                         </View>
-
-                        <View style={styles.actions}>
-                            <TouchableOpacity
-                                style={[styles.callBtn, { backgroundColor: colors.accent }]}
-                            >
-                                <Phone size={18} color="#003333" />
-                                <Text style={styles.callBtnText}>Call</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.deleteBtn, { borderColor: colors.destructive }]}
-                                onPress={() => handleDelete(user.id)}
-                            >
-                                <Trash2 size={18} color={colors.destructive} />
-                                <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>Delete</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ))}
+                    );
+                })}
             </View>
         </ScrollView>
     );
@@ -124,113 +224,107 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    content: {
-        padding: 16,
-    },
-    header: {
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 16,
-    },
-    headerText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    card: {
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        marginBottom: 16,
-    },
-    avatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+    centerContent: {
         justifyContent: 'center',
         alignItems: 'center',
     },
-    avatarText: {
-        color: '#FFF',
-        fontSize: 20,
-        fontWeight: 'bold',
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
     },
-    cardInfo: {
+    statsRow: {
+        flexDirection: 'row',
+        padding: 16,
+        gap: 10,
+    },
+    statCard: {
+        flex: 1,
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 12,
+    },
+    statNumber: {
+        color: '#FFF',
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginTop: 4,
+    },
+    statLabel: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 11,
+        marginTop: 2,
+    },
+    listContainer: {
+        paddingHorizontal: 16,
+        gap: 10,
+    },
+    card: {
+        borderRadius: 14,
+        padding: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 1,
+    },
+    userRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    userInfo: {
         flex: 1,
         marginLeft: 12,
     },
-    nameRow: {
+    userName: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    adminTag: {
+        color: '#F97316',
+        fontWeight: '500',
+    },
+    phoneRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        marginTop: 4,
+        gap: 4,
     },
-    name: {
-        fontSize: 16,
-        fontWeight: 'bold',
+    userPhone: {
+        fontSize: 12,
     },
-    phone: {
-        fontSize: 13,
-        marginTop: 2,
+    verificationBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        marginTop: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        gap: 4,
+    },
+    verificationText: {
+        fontSize: 11,
+        fontWeight: '500',
+    },
+    adminBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     location: {
         fontSize: 12,
-        marginTop: 2,
-    },
-    stats: {
-        flexDirection: 'row',
+        marginTop: 10,
+        paddingTop: 10,
         borderTopWidth: 1,
-        paddingTop: 12,
-        marginBottom: 12,
-    },
-    stat: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    statValue: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    statLabel: {
-        fontSize: 12,
-        marginTop: 2,
-    },
-    actions: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    callBtn: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        borderRadius: 8,
-        gap: 6,
-    },
-    callBtnText: {
-        color: '#003333',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    deleteBtn: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 6,
-    },
-    deleteBtnText: {
-        fontSize: 14,
-        fontWeight: '600',
+        borderTopColor: '#E5E7EB',
     },
 });

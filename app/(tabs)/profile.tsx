@@ -179,13 +179,30 @@ export default function ProfileScreen() {
                     </View>
                     <TouchableOpacity
                         style={[styles.uploadButton, { backgroundColor: colors.primary }]}
-                        onPress={handleUploadDocuments}
+                        onPress={() => router.push('/verification')}
                         disabled={uploading}
                     >
                         <Upload size={20} color="#FFF" />
                         <Text style={styles.uploadButtonText}>
-                            {uploading ? 'Uploading...' : 'Upload Documents'}
+                            {userProfile?.verificationStatus === 'pending' ? 'View Status' : 'Get Verified'}
                         </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {/* Admin Panel - Only for admins */}
+            {userProfile?.isAdmin && (
+                <View style={styles.section}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Admin</Text>
+                    <TouchableOpacity
+                        style={[styles.menuItem, { backgroundColor: '#F97316' }]}
+                        onPress={() => router.push('/admin')}
+                    >
+                        <View style={styles.menuLeft}>
+                            <FileText size={20} color="#FFF" />
+                            <Text style={[styles.menuText, { color: '#FFF' }]}>Open Admin Panel</Text>
+                        </View>
+                        <ChevronRight size={20} color="#FFF" />
                     </TouchableOpacity>
                 </View>
             )}

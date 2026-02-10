@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,35 +6,30 @@ import {
     StyleSheet,
     TouchableOpacity,
     useColorScheme,
+    Image,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { SubCategories, ListingCategory } from '@/types';
 import { MapPin, BadgeCheck, ChevronRight } from 'lucide-react-native';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-// Mock listings by category
-const mockListings: Record<ListingCategory, any[]> = {
-    jobs: [
-        { id: '1', title: 'Office Assistant Needed', subCategory: 'Office Assistant', price: '₹15,000/month', location: 'Jaipur, RJ', ownerVerified: true },
-        { id: '2', title: 'Delivery Driver Required', subCategory: 'Driver', price: '₹18,000/month', location: 'Lucknow, UP', ownerVerified: true },
-    ],
-    services: [
-        { id: '3', title: 'Electrician Available', subCategory: 'Electrician', price: '₹500/hour', location: 'Indore, MP', ownerVerified: true },
-        { id: '4', title: 'Plumbing Services', subCategory: 'Plumber', price: '₹400/hour', location: 'Bhopal, MP', ownerVerified: false },
-    ],
-    'buy-sell': [
-        { id: '5', title: 'Samsung TV 55 inch', subCategory: 'Electronics', price: '₹25,000', location: 'Jaipur, RJ', ownerVerified: true },
-    ],
-    rent: [
-        { id: '6', title: 'JCB for Rent', subCategory: 'JCB', price: '₹2,000/day', location: 'Jodhpur, RJ', ownerVerified: true },
-        { id: '7', title: 'Tractor Available', subCategory: 'Tractor', price: '₹1,500/day', location: 'Ajmer, RJ', ownerVerified: false },
-    ],
-    business: [
-        { id: '8', title: 'Sharma General Store', subCategory: 'Grocery', price: 'Open 9 AM - 9 PM', location: 'Jaipur, RJ', ownerVerified: true },
-        { id: '9', title: 'Raj Electronics', subCategory: 'Electronics', price: 'Open 10 AM - 8 PM', location: 'Udaipur, RJ', ownerVerified: true },
-        { id: '10', title: 'Neha Beauty Parlour', subCategory: 'Salon', price: 'Open 10 AM - 7 PM', location: 'Jodhpur, RJ', ownerVerified: false },
-    ],
-};
+interface Listing {
+    id: string;
+    title: string;
+    subCategory: string;
+    price?: number;
+    salary?: number;
+    salaryType?: string;
+    priceUnit?: string;
+    location: string;
+    images: string[];
+    ownerName: string;
+    status: string;
+}
 
 const categoryTitles: Record<ListingCategory, string> = {
     jobs: 'Jobs',
@@ -50,9 +45,62 @@ export default function CategoryListingsScreen() {
     const colors = Colors[colorScheme];
     const router = useRouter();
 
+    const [listings, setListings] = useState<Listing[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
     const category = categoryId as ListingCategory;
-    const listings = mockListings[category] || [];
     const subCategories = SubCategories[category] || [];
+
+    const fetchListings = async () => {
+        try {
+            const q = query(
+                collection(db, 'listings'),
+                where('category', '==', category),
+                where('status', '==', 'approved') // Only show approved listings
+            );
+            const snapshot = await getDocs(q);
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Listing[];
+            setListings(data);
+        } catch (error) {
+            console.error('Error fetching listings:', error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchListings();
+    }, [category]);
+
+    const formatPrice = (listing: Listing) => {
+        if (category === 'jobs' && listing.salary) {
+            const type = listing.salaryType === 'monthly' ? '/month' : listing.salaryType === 'daily' ? '/day' : '/hr';
+            return `₹${listing.salary.toLocaleString()}${type}`;
+        }
+        if (listing.price) {
+            if (category === 'rent' && listing.priceUnit) {
+                return `₹${listing.price.toLocaleString()}/${listing.priceUnit}`;
+            }
+            return `₹${listing.price.toLocaleString()}`;
+        }
+        return 'Contact for price';
+    };
+
+    if (loading) {
+        return (
+            <>
+                <Stack.Screen options={{ title: categoryTitles[category] || 'Listings' }} />
+                <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            </>
+        );
+    }
 
     return (
         <>
@@ -61,6 +109,12 @@ export default function CategoryListingsScreen() {
             <ScrollView
                 style={[styles.container, { backgroundColor: colors.background }]}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => {
+                        setRefreshing(true);
+                        fetchListings();
+                    }} />
+                }
             >
                 {/* Sub-categories */}
                 <View style={styles.subCategoriesSection}>
@@ -93,7 +147,14 @@ export default function CategoryListingsScreen() {
                                 onPress={() => router.push(`/listing/${listing.id}`)}
                                 activeOpacity={0.7}
                             >
-                                <View style={[styles.listingImage, { backgroundColor: colors.muted }]} />
+                                {listing.images && listing.images.length > 0 ? (
+                                    <Image
+                                        source={{ uri: listing.images[0] }}
+                                        style={styles.listingImage}
+                                    />
+                                ) : (
+                                    <View style={[styles.listingImage, { backgroundColor: colors.muted }]} />
+                                )}
                                 <View style={styles.listingContent}>
                                     <Text style={[styles.listingTitle, { color: colors.text }]} numberOfLines={1}>
                                         {listing.title}
@@ -102,7 +163,7 @@ export default function CategoryListingsScreen() {
                                         {listing.subCategory}
                                     </Text>
                                     <Text style={[styles.listingPrice, { color: colors.primary }]}>
-                                        {listing.price}
+                                        {formatPrice(listing)}
                                     </Text>
                                     <View style={styles.listingFooter}>
                                         <View style={styles.locationRow}>
@@ -111,9 +172,7 @@ export default function CategoryListingsScreen() {
                                                 {listing.location}
                                             </Text>
                                         </View>
-                                        {listing.ownerVerified && (
-                                            <BadgeCheck size={16} color={colors.accent} />
-                                        )}
+                                        <BadgeCheck size={16} color={colors.accent} />
                                     </View>
                                 </View>
                                 <ChevronRight size={20} color={colors.textSecondary} />
@@ -127,6 +186,8 @@ export default function CategoryListingsScreen() {
                         </View>
                     )}
                 </View>
+
+                <View style={{ height: 40 }} />
             </ScrollView>
         </>
     );
@@ -135,6 +196,10 @@ export default function CategoryListingsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     subCategoriesSection: {
         padding: 16,

@@ -10,6 +10,7 @@ import {
     Alert,
     Image,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +18,8 @@ import { useRouter } from 'expo-router';
 import { ListingCategory, SubCategories } from '@/types';
 import { Camera, X, ChevronDown, AlertCircle } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function PostAdScreen() {
     const colorScheme = useColorScheme() ?? 'light';
@@ -47,6 +50,7 @@ export default function PostAdScreen() {
 
     const [showCategoryPicker, setShowCategoryPicker] = useState(false);
     const [showSubCategoryPicker, setShowSubCategoryPicker] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Check if user is verified
     const isVerified = userProfile?.verificationStatus === 'approved';
@@ -75,16 +79,75 @@ export default function PostAdScreen() {
             return;
         }
 
-        // In real app, this would save to Firestore
-        Alert.alert(
-            'Success',
-            'Your listing has been submitted for review. It will be visible once approved.',
-            [{ text: 'OK', onPress: () => router.back() }]
-        );
+        if (images.length === 0) {
+            Alert.alert('Error', 'Please add at least one image');
+            return;
+        }
+
+        const userId = user?.uid || userProfile?.id;
+        if (!userId) {
+            Alert.alert('Error', 'You must be logged in');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Build listing data based on category
+            const listingData: any = {
+                title: title.trim(),
+                description: description.trim(),
+                category,
+                subCategory,
+                location: location.trim(),
+                images, // In production, upload to Firebase Storage first
+                ownerId: userId,
+                ownerName: userProfile?.name || '',
+                ownerPhone: userProfile?.phoneNumber || '',
+                status: 'pending', // Pending admin approval
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
+            // Add category-specific fields
+            if (category === 'jobs') {
+                listingData.salary = salary ? parseInt(salary) : null;
+                listingData.salaryType = salaryType;
+            } else if (category === 'rent') {
+                listingData.price = price ? parseInt(price) : null;
+                listingData.priceUnit = priceUnit;
+            } else if (category === 'buy-sell') {
+                listingData.price = price ? parseInt(price) : null;
+                listingData.condition = condition;
+                listingData.negotiable = negotiable;
+            } else if (category === 'business') {
+                listingData.businessName = businessName.trim();
+                listingData.openingHours = openingHours.trim();
+                listingData.contactNumber = contactNumber.trim();
+                listingData.address = address.trim();
+            } else if (category === 'services') {
+                listingData.price = price ? parseInt(price) : null;
+            }
+
+            // Save to Firestore
+            await addDoc(collection(db, 'listings'), listingData);
+
+            Alert.alert(
+                'Success! 🎉',
+                'Your listing has been submitted for review. It will be visible once approved by admin.',
+                [{ text: 'OK', onPress: () => router.back() }]
+            );
+        } catch (error) {
+            console.error('Error submitting listing:', error);
+            Alert.alert('Error', 'Failed to submit listing. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // If user not logged in
-    if (!user) {
+    // If user not logged in (check both user and userProfile for test mode)
+    const isLoggedIn = user || userProfile;
+
+    if (!isLoggedIn) {
         return (
             <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
                 <AlertCircle size={64} color={colors.primary} />
@@ -104,18 +167,32 @@ export default function PostAdScreen() {
 
     // If user not verified
     if (!isVerified) {
+        const isPending = userProfile?.verificationStatus === 'pending';
+
         return (
             <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}>
-                <AlertCircle size={64} color={colors.destructive} />
-                <Text style={[styles.warningTitle, { color: colors.text }]}>Verification Required</Text>
-                <Text style={[styles.warningText, { color: colors.textSecondary }]}>
-                    Only verified users can post listings. Please complete your verification from your profile.
+                <AlertCircle size={64} color={isPending ? colors.warning : colors.destructive} />
+                <Text style={[styles.warningTitle, { color: colors.text }]}>
+                    {isPending ? 'Verification Pending' : 'Verification Required'}
                 </Text>
+                <Text style={[styles.warningText, { color: colors.textSecondary }]}>
+                    {isPending
+                        ? 'Your documents are being reviewed. We will notify you once approved.'
+                        : 'To post listings, you need to verify your identity by submitting PAN Card and Aadhar Card.'}
+                </Text>
+                {!isPending && (
+                    <TouchableOpacity
+                        style={[styles.loginButton, { backgroundColor: colors.primary }]}
+                        onPress={() => router.push('/verification')}
+                    >
+                        <Text style={styles.loginButtonText}>Get Verified</Text>
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                    style={[styles.loginButton, { backgroundColor: colors.primary }]}
-                    onPress={() => router.push('/profile')}
+                    style={[styles.loginButton, { backgroundColor: colors.muted, marginTop: 12 }]}
+                    onPress={() => router.back()}
                 >
-                    <Text style={styles.loginButtonText}>Go to Profile</Text>
+                    <Text style={[styles.loginButtonText, { color: colors.text }]}>Go Back</Text>
                 </TouchableOpacity>
             </View>
         );

@@ -48,6 +48,34 @@ export default function RootLayout() {
                         headerBackVisible: false,
                     }}
                 />
+                <Stack.Screen
+                    name="verification"
+                    options={{
+                        title: 'Verify Account',
+                        headerBackTitle: 'Back',
+                        presentation: 'modal',
+                    }}
+                />
+                <Stack.Screen
+                    name="admin"
+                    options={{
+                        headerShown: false,
+                    }}
+                />
+                <Stack.Screen
+                    name="privacy-policy"
+                    options={{
+                        headerShown: false,
+                        title: 'Privacy Policy',
+                    }}
+                />
+                <Stack.Screen
+                    name="terms-of-service"
+                    options={{
+                        headerShown: false,
+                        title: 'Terms of Service',
+                    }}
+                />
             </Stack>
         </AuthProvider>
     );

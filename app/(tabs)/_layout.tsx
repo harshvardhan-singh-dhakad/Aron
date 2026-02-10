@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useColorScheme, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
 import {
     Home,
@@ -17,6 +18,7 @@ export default function TabLayout() {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme];
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     return (
         <View style={{ flex: 1 }}>
@@ -28,8 +30,8 @@ export default function TabLayout() {
                         backgroundColor: colors.tabBar,
                         borderTopWidth: 1,
                         borderTopColor: colors.border,
-                        height: 60,
-                        paddingBottom: 6,
+                        height: 60 + insets.bottom,
+                        paddingBottom: 6 + insets.bottom,
                         paddingTop: 6,
                     },
                     tabBarLabelStyle: {
@@ -155,7 +157,13 @@ export default function TabLayout() {
 
             {/* Floating Post Button - Right Side */}
             <TouchableOpacity
-                style={[styles.floatingButton, { backgroundColor: colors.accent }]}
+                style={[
+                    styles.floatingButton,
+                    {
+                        backgroundColor: colors.accent,
+                        bottom: 80 + insets.bottom,
+                    }
+                ]}
                 onPress={() => router.push('/(tabs)/post-ad')}
             >
                 <Plus size={28} color="#FFFFFF" strokeWidth={3} />

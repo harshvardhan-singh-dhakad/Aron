@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,10 +10,14 @@ import {
     Platform,
     Alert,
     ActivityIndicator,
+    ScrollView,
+    Keyboard,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useRouter } from 'expo-router';
-import { Phone, ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
+import { sendOTP, verifyOTP, initRecaptcha } from '@/lib/services/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Step = 'phone' | 'otp';
 
@@ -21,28 +25,50 @@ export default function LoginScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme];
     const router = useRouter();
+    const { setUserProfile } = useAuth();
 
     const [step, setStep] = useState<Step>('phone');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const otpInputs = useRef<TextInput[]>([]);
 
+    // Initialize reCAPTCHA on mount (for web only)
+    useEffect(() => {
+        // Only run on web platform
+        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+            // Add invisible recaptcha container
+            const container = document.getElementById('recaptcha-container');
+            if (!container) {
+                const div = document.createElement('div');
+                div.id = 'recaptcha-container';
+                document.body.appendChild(div);
+            }
+        }
+    }, []);
+
     const handleSendOtp = async () => {
         if (phoneNumber.length !== 10) {
-            Alert.alert('Error', 'Please enter a valid 10-digit phone number');
+            setError('Please enter a valid 10-digit phone number');
             return;
         }
 
+        setError('');
         setLoading(true);
+
         try {
-            // In real app, this would use Firebase Phone Auth
-            // For demo, we simulate OTP sent
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Initialize recaptcha for web only
+            if (Platform.OS === 'web') {
+                initRecaptcha('recaptcha-container');
+            }
+
+            await sendOTP(phoneNumber);
             setStep('otp');
-        } catch (error) {
-            Alert.alert('Error', 'Failed to send OTP. Please try again.');
+        } catch (err: any) {
+            console.error('OTP Error:', err);
+            setError(err.message || 'Failed to send OTP. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -68,18 +94,29 @@ export default function LoginScreen() {
     const handleVerifyOtp = async () => {
         const otpString = otp.join('');
         if (otpString.length !== 6) {
-            Alert.alert('Error', 'Please enter the complete 6-digit OTP');
+            setError('Please enter the complete 6-digit OTP');
             return;
         }
 
+        setError('');
         setLoading(true);
+
         try {
-            // Demo mode - using mock login
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            // Navigate to home
-            router.replace('/(tabs)');
-        } catch (error) {
-            Alert.alert('Error', 'Invalid OTP. Please try again.');
+            const profile = await verifyOTP(otpString);
+
+            if (profile) {
+                setUserProfile(profile);
+
+                // Check if profile is complete
+                if (!profile.profileCompleted) {
+                    router.replace('/complete-profile');
+                } else {
+                    router.replace('/(tabs)');
+                }
+            }
+        } catch (err: any) {
+            console.error('Verify Error:', err);
+            setError(err.message || 'Invalid OTP. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -88,117 +125,151 @@ export default function LoginScreen() {
     return (
         <KeyboardAvoidingView
             style={[styles.container, { backgroundColor: colors.background }]}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-            <View style={styles.content}>
-                {/* Header */}
-                {step === 'otp' && (
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => {
-                            setStep('phone');
-                            setOtp(['', '', '', '', '', '']);
-                        }}
-                    >
-                        <ArrowLeft size={24} color={colors.text} />
-                    </TouchableOpacity>
-                )}
-
-                {/* Logo */}
-                <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.logoText}>A</Text>
-                </View>
-                <Text style={[styles.appName, { color: colors.primary }]}>Aron</Text>
-
-                {/* Title */}
-                <Text style={[styles.title, { color: colors.text }]}>
-                    {step === 'phone' ? 'Welcome' : 'Verify OTP'}
-                </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                    {step === 'phone'
-                        ? 'Enter your mobile number to get started'
-                        : `Enter the 6-digit code sent to +91 ${phoneNumber}`}
-                </Text>
-
-                {/* Form */}
-                {step === 'phone' ? (
-                    <View style={styles.form}>
-                        <View style={[styles.phoneInputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                            <View style={[styles.countryCode, { borderRightColor: colors.border }]}>
-                                <Text style={[styles.countryCodeText, { color: colors.text }]}>+91</Text>
-                            </View>
-                            <TextInput
-                                style={[styles.phoneInput, { color: colors.text }]}
-                                placeholder="9876543210"
-                                placeholderTextColor={colors.textSecondary}
-                                value={phoneNumber}
-                                onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ''))}
-                                keyboardType="phone-pad"
-                                maxLength={10}
-                                autoFocus
-                            />
-                        </View>
-
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.content}>
+                    {/* Header */}
+                    {step === 'otp' && (
                         <TouchableOpacity
-                            style={[styles.button, { backgroundColor: colors.primary }]}
-                            onPress={handleSendOtp}
-                            disabled={loading}
+                            style={styles.backButton}
+                            onPress={() => {
+                                setStep('phone');
+                                setOtp(['', '', '', '', '', '']);
+                                setError('');
+                            }}
                         >
-                            {loading ? (
-                                <ActivityIndicator color="#FFF" />
-                            ) : (
-                                <Text style={styles.buttonText}>Continue</Text>
-                            )}
+                            <ArrowLeft size={24} color={colors.text} />
                         </TouchableOpacity>
+                    )}
+
+                    {/* Logo */}
+                    <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.logoText}>A</Text>
                     </View>
-                ) : (
-                    <View style={styles.form}>
-                        <View style={styles.otpContainer}>
-                            {otp.map((digit, index) => (
+                    <Text style={[styles.appName, { color: colors.primary }]}>Aron</Text>
+
+                    {/* Title */}
+                    <Text style={[styles.title, { color: colors.text }]}>
+                        {step === 'phone' ? 'Welcome' : 'Verify OTP'}
+                    </Text>
+                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                        {step === 'phone'
+                            ? 'Enter your mobile number to get started'
+                            : `Enter the 6-digit code sent to +91 ${phoneNumber}`}
+                    </Text>
+
+                    {/* Error Message */}
+                    {error ? (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    ) : null}
+
+                    {/* Form */}
+                    {step === 'phone' ? (
+                        <View style={styles.form}>
+                            <View style={[styles.phoneInputContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                                <View style={[styles.countryCode, { borderRightColor: colors.border }]}>
+                                    <Text style={[styles.countryCodeText, { color: colors.text }]}>+91</Text>
+                                </View>
                                 <TextInput
-                                    key={index}
-                                    ref={(ref) => { if (ref) otpInputs.current[index] = ref; }}
-                                    style={[
-                                        styles.otpInput,
-                                        {
-                                            backgroundColor: colors.card,
-                                            borderColor: digit ? colors.primary : colors.border,
-                                            color: colors.text
-                                        }
-                                    ]}
-                                    value={digit}
-                                    onChangeText={(value) => handleOtpChange(value.replace(/[^0-9]/g, ''), index)}
-                                    onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
-                                    keyboardType="number-pad"
-                                    maxLength={1}
-                                    autoFocus={index === 0}
+                                    style={[styles.phoneInput, { color: colors.text }]}
+                                    placeholder="9876543210"
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={phoneNumber}
+                                    onChangeText={(text) => {
+                                        setPhoneNumber(text.replace(/[^0-9]/g, ''));
+                                        setError('');
+                                    }}
+                                    keyboardType="phone-pad"
+                                    maxLength={10}
+                                    autoFocus
                                 />
-                            ))}
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.button, { backgroundColor: colors.primary }]}
+                                onPress={handleSendOtp}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFF" />
+                                ) : (
+                                    <Text style={styles.buttonText}>Continue</Text>
+                                )}
+                            </TouchableOpacity>
                         </View>
+                    ) : (
+                        <View style={styles.form}>
+                            <View style={styles.otpContainer}>
+                                {otp.map((digit, index) => (
+                                    <TextInput
+                                        key={index}
+                                        ref={(ref) => { if (ref) otpInputs.current[index] = ref; }}
+                                        style={[
+                                            styles.otpInput,
+                                            {
+                                                backgroundColor: colors.card,
+                                                borderColor: digit ? colors.primary : colors.border,
+                                                color: colors.text
+                                            }
+                                        ]}
+                                        value={digit}
+                                        onChangeText={(value) => handleOtpChange(value.replace(/[^0-9]/g, ''), index)}
+                                        onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        autoFocus={index === 0}
+                                    />
+                                ))}
+                            </View>
 
-                        <TouchableOpacity
-                            style={[styles.button, { backgroundColor: colors.primary }]}
-                            onPress={handleVerifyOtp}
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#FFF" />
-                            ) : (
-                                <Text style={styles.buttonText}>Verify & Login</Text>
-                            )}
+                            <TouchableOpacity
+                                style={[styles.button, { backgroundColor: colors.primary }]}
+                                onPress={handleVerifyOtp}
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFF" />
+                                ) : (
+                                    <Text style={styles.buttonText}>Verify & Login</Text>
+                                )}
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.resendButton} onPress={handleSendOtp} disabled={loading}>
+                                <Text style={[styles.resendText, { color: colors.primary }]}>Resend OTP</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {/* Footer - inside content view */}
+                    <View style={styles.footerContainer}>
+                        <Text style={[styles.footer, { color: colors.textSecondary }]}>
+                            By continuing, you agree to our{' '}
+                        </Text>
+                        <TouchableOpacity onPress={() => router.push('/terms-of-service')}>
+                            <Text style={[styles.footerLink, { color: colors.primary }]}>
+                                Terms of Service
+                            </Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.resendButton} onPress={handleSendOtp}>
-                            <Text style={[styles.resendText, { color: colors.primary }]}>Resend OTP</Text>
+                        <Text style={[styles.footer, { color: colors.textSecondary }]}> and </Text>
+                        <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
+                            <Text style={[styles.footerLink, { color: colors.primary }]}>
+                                Privacy Policy
+                            </Text>
                         </TouchableOpacity>
                     </View>
-                )}
-            </View>
+                </View>
 
-            {/* Footer */}
-            <Text style={[styles.footer, { color: colors.textSecondary }]}>
-                By continuing, you agree to our Terms of Service and Privacy Policy
-            </Text>
+                {/* Hidden recaptcha container for web */}
+                <View nativeID="recaptcha-container" style={styles.recaptchaContainer} />
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }
@@ -207,10 +278,14 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    scrollContent: {
+        flexGrow: 1,
+    },
     content: {
         flex: 1,
         paddingHorizontal: 24,
         paddingTop: 80,
+        paddingBottom: 40,
         alignItems: 'center',
     },
     backButton: {
@@ -245,8 +320,20 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 14,
         textAlign: 'center',
-        marginBottom: 32,
+        marginBottom: 16,
         paddingHorizontal: 16,
+    },
+    errorContainer: {
+        backgroundColor: '#FEE2E2',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+        width: '100%',
+    },
+    errorText: {
+        color: '#DC2626',
+        fontSize: 14,
+        textAlign: 'center',
     },
     form: {
         width: '100%',
@@ -310,7 +397,24 @@ const styles = StyleSheet.create({
     footer: {
         fontSize: 12,
         textAlign: 'center',
+    },
+    footerContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'center',
         paddingHorizontal: 32,
         paddingBottom: 32,
+    },
+    footerLink: {
+        fontSize: 12,
+        fontWeight: '600',
+        textDecorationLine: 'underline',
+    },
+    recaptchaContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        opacity: 0,
     },
 });

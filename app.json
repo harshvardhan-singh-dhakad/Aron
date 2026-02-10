@@ -2,6 +2,7 @@
   "expo": {
     "name": "Aron",
     "slug": "aron",
+    "owner": "harshvardhan_singh_dhakad",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +19,11 @@
         "backgroundColor": "#008080"
       },
       "package": "com.aron.app",
-      "edgeToEdgeEnabled": true
+      "googleServicesFile": "./google-services.json",
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +41,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bc0db6f9-cc94-4a79-8aa7-f67fb07b52b6"
+      }
     }
   }
 }

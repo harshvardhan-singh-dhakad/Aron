@@ -8,11 +8,12 @@ import {
     TouchableOpacity,
     useColorScheme,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MapPin, User as UserIcon } from 'lucide-react-native';
 
@@ -20,7 +21,7 @@ export default function CompleteProfileScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme];
     const router = useRouter();
-    const { user, refreshUserProfile } = useAuth();
+    const { user, userProfile, refreshUserProfile, setUserProfile } = useAuth();
 
     const [name, setName] = useState('');
     const [location, setLocation] = useState('');
@@ -32,26 +33,51 @@ export default function CompleteProfileScreen() {
             return;
         }
 
-        if (!user) {
+        // Get user ID from either user (Firebase) or userProfile (test mode)
+        const userId = user?.uid || userProfile?.id;
+
+        if (!userId) {
             Alert.alert('Error', 'You must be logged in');
             return;
         }
 
         setLoading(true);
+
+        // STEP 1: Update local state IMMEDIATELY (instant UI update)
+        if (userProfile) {
+            setUserProfile({
+                ...userProfile,
+                name: name.trim(),
+                location: location.trim(),
+                profileCompleted: true,
+            });
+        }
+
+        // STEP 2: Navigate IMMEDIATELY (don't wait for Firestore)
+        router.replace('/(tabs)');
+
+        // STEP 3: Save to Firestore in background (fire-and-forget)
         try {
-            await updateDoc(doc(db, 'users', user.uid), {
+            const userRef = doc(db, 'users', userId);
+            const updateData = {
                 name: name.trim(),
                 location: location.trim(),
                 profileCompleted: true,
                 updatedAt: serverTimestamp(),
+            };
+
+            // Use setDoc with merge to handle both create and update
+            setDoc(userRef, {
+                ...updateData,
+                phoneNumber: userProfile?.phoneNumber || '',
+                verificationStatus: userProfile?.verificationStatus || 'none',
+                isAdmin: userProfile?.isAdmin || false,
+                createdAt: serverTimestamp(),
+            }, { merge: true }).catch((err) => {
+                console.log('Background profile save error:', err);
             });
-            await refreshUserProfile();
-            router.replace('/(tabs)');
         } catch (error) {
-            console.error('Error updating profile:', error);
-            Alert.alert('Error', 'Failed to update profile. Please try again.');
-        } finally {
-            setLoading(false);
+            console.error('Error preparing profile update:', error);
         }
     };
 
