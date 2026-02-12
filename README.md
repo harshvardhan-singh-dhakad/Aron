@@ -72,9 +72,10 @@ aron-expo/
 
 ## Color Palette
 
-- **Primary**: Dark Teal (#008080)
-- **Background**: Light Teal (#E0F8F7)
-- **Accent**: Seafoam Green (#77D9A1)
+- **Primary**: Blue (#007BFF) - Used for Navigation Bar
+- **Secondary**: Green (#28A745) - Used for Headings & Success States
+- **Accent**: Orange (#FD7E14) - Used for Buttons (e.g., Post Ad)
+- **Background**: White (#FFFFFF) - Main App Background
 
 ## Getting Started
 
