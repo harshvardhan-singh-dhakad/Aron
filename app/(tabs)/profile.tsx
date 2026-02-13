@@ -8,6 +8,7 @@ import {
     useColorScheme,
     Alert,
     Image,
+    Platform,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,19 @@ export default function ProfileScreen() {
     const [uploading, setUploading] = useState(false);
 
     const handleLogout = async () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm('Are you sure you want to logout?')) {
+                try {
+                    await signOut();
+                    router.replace('/(auth)/login');
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    window.alert('Failed to logout');
+                }
+            }
+            return;
+        }
+
         Alert.alert(
             'Logout',
             'Are you sure you want to logout?',
@@ -49,6 +63,7 @@ export default function ProfileScreen() {
                             await signOut();
                             router.replace('/(auth)/login');
                         } catch (error) {
+                            console.error('Logout error:', error);
                             Alert.alert('Error', 'Failed to logout');
                         }
                     }
@@ -142,7 +157,9 @@ export default function ProfileScreen() {
                     </View>
                     {getVerificationBadge()}
                 </View>
-                <Text style={styles.userName}>{userProfile?.name || 'User'}</Text>
+                <Text style={styles.userName}>
+                    {userProfile?.name || 'User'} {userProfile?.isAdmin ? '(Admin)' : ''}
+                </Text>
                 <View style={styles.locationRow}>
                     <MapPin size={14} color="rgba(255,255,255,0.8)" />
                     <Text style={styles.userLocation}>{userProfile?.location || 'Location not set'}</Text>
@@ -212,7 +229,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>My Listings</Text>
                 <TouchableOpacity
                     style={[styles.menuItem, { backgroundColor: colors.card }]}
-                    onPress={() => {/* Navigate to my listings */ }}
+                    onPress={() => router.push('/user/listings')}
                 >
                     <View style={styles.menuLeft}>
                         <FileText size={20} color={colors.primary} />

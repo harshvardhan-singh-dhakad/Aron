@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { Platform } from 'react-native';
 import { auth } from '@/lib/firebase';
 import { getUserProfile, signOut as firebaseSignOut } from '@/lib/services/auth';
 import { UserProfile } from '@/types';
+import { Alert, Platform } from 'react-native';
 
 interface AuthContextType {
     user: User | null;
@@ -23,73 +23,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen to auth state changes
     useEffect(() => {
-        // Check for persisted test user (Web only)
-        if (Platform.OS === 'web') {
-            const savedProfile = localStorage.getItem('aron_test_profile');
-            if (savedProfile) {
-                try {
-                    const parsedProfile = JSON.parse(savedProfile);
-                    // Restore dates from strings
-                    parsedProfile.createdAt = new Date(parsedProfile.createdAt);
-                    parsedProfile.updatedAt = new Date(parsedProfile.updatedAt);
-                    setUserProfile(parsedProfile);
-                    // Also mock the user object if needed for logic checks
-                    setUser({ uid: parsedProfile.id, phoneNumber: parsedProfile.phoneNumber } as User);
-                } catch (e) {
-                    console.error('Failed to restore profile', e);
-                }
-            }
-        }
-
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (Platform.OS === 'web') {
-                // If real Firebase user exists, it overrides test user
-                if (firebaseUser) {
-                    setUser(firebaseUser);
-                    const profile = await getUserProfile(firebaseUser.uid);
-                    setUserProfile(profile);
+            if (firebaseUser) {
+                setUser(firebaseUser);
+                try {
+                    // Check for admin claim
+                    const tokenResult = await firebaseUser.getIdTokenResult();
+                    const isAdminClaim = !!tokenResult.claims.admin;
 
-                    // Clear test profile if real login happens
-                    localStorage.removeItem('aron_test_profile');
-                } else {
-                    // If no firebase user, we might still have the test user from local storage
-                    // So don't strictly set user to null if we have a test profile
-                    const savedProfile = localStorage.getItem('aron_test_profile');
-                    if (!savedProfile) {
-                        setUser(null);
-                        setUserProfile(null);
+                    const profile = await getUserProfile(firebaseUser.uid);
+
+                    if (profile) {
+                        // Merge admin claim source
+                        profile.isAdmin = profile.isAdmin || isAdminClaim;
+
+                        if (profile.isBlocked) {
+                            if (Platform.OS === 'web') {
+                                window.alert('Access Denied: Your account has been blocked by the admin.');
+                            } else {
+                                Alert.alert('Access Denied', 'Your account has been blocked by the admin.');
+                            }
+                            await firebaseSignOut();
+                            setUser(null);
+                            setUserProfile(null);
+                            setLoading(false);
+                            return;
+                        }
+                        setUserProfile(profile);
                     }
+                } catch (error) {
+                    console.error('Error fetching user profile:', error);
                 }
+            } else {
+                setUser(null);
+                setUserProfile(null);
             }
             setLoading(false);
         });
 
-        // For native platforms, just set loading to false
-        if (Platform.OS !== 'web') {
-            setLoading(false);
-        }
-
         return () => unsubscribe();
     }, []);
 
-    const saveProfileLocally = (profile: UserProfile | null) => {
-        setUserProfile(profile);
-        if (Platform.OS === 'web') {
-            if (profile) {
-                localStorage.setItem('aron_test_profile', JSON.stringify(profile));
-            } else {
-                localStorage.removeItem('aron_test_profile');
-            }
-        }
-    };
-
     const refreshUserProfile = async () => {
-        if (userProfile?.id) {
-            const profile = await getUserProfile(userProfile.id);
-            if (profile) {
-                setUserProfile(profile);
-            }
-        } else if (user) {
+        if (user) {
             const profile = await getUserProfile(user.uid);
             setUserProfile(profile);
         }
@@ -99,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             await firebaseSignOut();
             setUser(null);
-            saveProfileLocally(null); // Clear local storage
+            setUserProfile(null);
         } catch (error) {
             console.error('Error signing out:', error);
             throw error;
@@ -113,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             loading,
             signOut,
             refreshUserProfile,
-            setUserProfile: saveProfileLocally // Use the wrapper
+            setUserProfile,
         }}>
             {children}
         </AuthContext.Provider>

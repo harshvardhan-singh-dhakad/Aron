@@ -9,11 +9,13 @@ import {
     Alert,
     ActivityIndicator,
     RefreshControl,
+    Platform,
 } from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { collection, getDocs, doc, updateDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, setDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { User, Phone, Shield, ShieldOff, Clock, CheckCircle, XCircle, Users } from 'lucide-react-native';
+import { toggleUserBlockStatus, deleteUserAccount } from '@/lib/services/auth';
+import { User, Phone, Shield, ShieldOff, Clock, CheckCircle, XCircle, Users, Lock, Unlock, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface UserData {
@@ -23,6 +25,7 @@ interface UserData {
     location: string;
     verificationStatus: 'none' | 'pending' | 'approved' | 'rejected';
     isAdmin: boolean;
+    isBlocked?: boolean;
     profileCompleted: boolean;
     createdAt: any;
 }
@@ -59,6 +62,12 @@ export default function AdminUsers() {
     }, []);
 
     const toggleAdmin = async (userId: string, currentStatus: boolean) => {
+        // ... (keep existing logic if needed, or use proper service function?)
+        // For now, I'll leave this as is since user didn't ask to change Admin toggle specifically, 
+        // but broadly "delete/block".
+        // Actually, user wants "admin ko allow karo ki wo delete kar sake".
+        // I will keep toggleAdmin as manual Firestore update for now to minimize change, 
+        // or I could refactor. I'll focus on adding new handlers.
         Alert.alert(
             currentStatus ? 'Remove Admin' : 'Make Admin',
             currentStatus
@@ -89,6 +98,138 @@ export default function AdminUsers() {
                 },
             ]
         );
+    };
+
+    const handleToggleBlock = async (user: UserData) => {
+        const action = user.isBlocked ? 'Unblock' : 'Block';
+        const message = `Are you sure you want to ${action} this user?`;
+
+        // Web shim check
+        if (Platform.OS === 'web') {
+            if (!window.confirm(message)) return;
+            performBlock(user);
+            return;
+        }
+
+        Alert.alert(
+            `${action} User`,
+            message,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Confirm',
+                    style: 'destructive',
+                    onPress: () => performBlock(user)
+                },
+            ]
+        );
+    };
+
+    const performBlock = async (user: UserData) => {
+        setActionLoading(user.id);
+        const success = await toggleUserBlockStatus(user.id, !!user.isBlocked);
+        setActionLoading(null);
+
+        if (success) {
+            setUsers(prev => prev.map(u =>
+                u.id === user.id ? { ...u, isBlocked: !user.isBlocked } : u
+            ));
+            if (Platform.OS !== 'web') Alert.alert('Success', `User ${user.isBlocked ? 'unblocked' : 'blocked'}`);
+        } else {
+            if (Platform.OS !== 'web') Alert.alert('Error', 'Failed to update block status');
+            else alert('Failed to update block status');
+        }
+    };
+
+    const handleVerifyUser = async (user: UserData) => {
+        if (user.verificationStatus === 'approved') {
+            Alert.alert('Info', 'User is already verified.');
+            return;
+        }
+
+        const confirmVerify = () => {
+            setActionLoading(user.id);
+            (async () => {
+                try {
+                    await updateDoc(doc(db, 'users', user.id), {
+                        verificationStatus: 'approved',
+                        updatedAt: serverTimestamp(),
+                    });
+
+                    // Also update verification record if exists (using user ID as doc ID)
+                    const verificationRef = doc(db, 'verifications', user.id);
+                    await setDoc(verificationRef, {
+                        status: 'approved',
+                        updatedAt: serverTimestamp(),
+                        userId: user.id,
+                        userName: user.name, // optional
+                        userPhone: user.phoneNumber // optional
+                    }, { merge: true });
+
+                    setUsers(prev => prev.map(u =>
+                        u.id === user.id ? { ...u, verificationStatus: 'approved' } : u
+                    ));
+                    if (Platform.OS !== 'web') Alert.alert('Success', 'User manually verified.');
+                    else alert('User manually verified.');
+                } catch (e) {
+                    console.error(e);
+                    if (Platform.OS !== 'web') Alert.alert('Error', 'Failed to verify user.');
+                    else alert('Failed to verify user.');
+                } finally {
+                    setActionLoading(null);
+                }
+            })();
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm('Do you want to manually verify this user?')) confirmVerify();
+        } else {
+            Alert.alert(
+                'Manual Verification',
+                'Do you want to manually verify this user without checking documents?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Verify', onPress: confirmVerify }
+                ]
+            );
+        }
+    };
+
+    const handleDelete = async (user: UserData) => {
+        const message = `Are you sure you want to DELETE this user? Data will be lost.`;
+
+        if (Platform.OS === 'web') {
+            if (!window.confirm(message)) return;
+            performDelete(user);
+            return;
+        }
+
+        Alert.alert(
+            'Delete User',
+            message,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => performDelete(user)
+                },
+            ]
+        );
+    };
+
+    const performDelete = async (user: UserData) => {
+        setActionLoading(user.id);
+        const success = await deleteUserAccount(user.id);
+        setActionLoading(null);
+
+        if (success) {
+            setUsers(prev => prev.filter(u => u.id !== user.id));
+            if (Platform.OS !== 'web') Alert.alert('Success', 'User deleted');
+        } else {
+            if (Platform.OS !== 'web') Alert.alert('Error', 'Failed to delete user');
+            else alert('Failed to delete user');
+        }
     };
 
     const getVerificationBadge = (status: string) => {
@@ -188,22 +329,55 @@ export default function AdminUsers() {
                                 </View>
 
                                 {/* Admin Toggle */}
-                                <TouchableOpacity
-                                    style={[
-                                        styles.adminBtn,
-                                        { backgroundColor: user.isAdmin ? '#FEE2E2' : '#DCFCE7' }
-                                    ]}
-                                    onPress={() => toggleAdmin(user.id, user.isAdmin)}
-                                    disabled={actionLoading === user.id}
-                                >
-                                    {actionLoading === user.id ? (
-                                        <ActivityIndicator size="small" color={colors.primary} />
-                                    ) : user.isAdmin ? (
-                                        <ShieldOff size={18} color="#EF4444" />
-                                    ) : (
-                                        <Shield size={18} color="#22C55E" />
-                                    )}
-                                </TouchableOpacity>
+                                <View style={styles.actionRow}>
+                                    {/* Force Verify */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.adminBtn,
+                                            { backgroundColor: user.verificationStatus === 'approved' ? '#DCFCE7' : '#FEF3C7' }
+                                        ]}
+                                        onPress={() => handleVerifyUser(user)}
+                                        disabled={!!actionLoading}
+                                    >
+                                        <CheckCircle size={18} color={user.verificationStatus === 'approved' ? '#22C55E' : '#D97706'} />
+                                    </TouchableOpacity>
+
+                                    {/* Admin Toggle */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.adminBtn,
+                                            { backgroundColor: user.isAdmin ? '#FEE2E2' : '#EFF6FF' }
+                                        ]}
+                                        onPress={() => toggleAdmin(user.id, user.isAdmin)}
+                                        disabled={!!actionLoading}
+                                    >
+                                        {user.isAdmin ? <ShieldOff size={18} color="#EF4444" /> : <Shield size={18} color="#3B82F6" />}
+                                    </TouchableOpacity>
+
+                                    {/* Block Toggle */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.adminBtn,
+                                            { backgroundColor: user.isBlocked ? '#DCFCE7' : '#FEF3C7' }
+                                        ]}
+                                        onPress={() => handleToggleBlock(user)}
+                                        disabled={!!actionLoading}
+                                    >
+                                        {user.isBlocked ? <Unlock size={18} color="#22C55E" /> : <Lock size={18} color="#D97706" />}
+                                    </TouchableOpacity>
+
+                                    {/* Delete */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.adminBtn,
+                                            { backgroundColor: '#FEE2E2' }
+                                        ]}
+                                        onPress={() => handleDelete(user)}
+                                        disabled={!!actionLoading}
+                                    >
+                                        <Trash2 size={18} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
 
                             {/* Location */}
@@ -326,5 +500,9 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         borderTopWidth: 1,
         borderTopColor: '#E5E7EB',
+    },
+    actionRow: {
+        flexDirection: 'row',
+        gap: 8,
     },
 });

@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function: User is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function: User matches given userId
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper function: User is Admin (checked via DB lookup OR custom claim)
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.admin == true) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+      );
+    }
+
+    // Default: Deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Read: Owner or Admin
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Create: Owner only (on Signup)
+      allow create: if isOwner(userId);
+      
+      // Update: Owner can update details, but NOT sensitive fields (isAdmin, isBlocked, verificationStatus).
+      // Admin can update everything.
+      allow update: if isAdmin() || 
+                    (isOwner(userId) && 
+                     request.resource.data.isAdmin == resource.data.isAdmin &&
+                     request.resource.data.isBlocked == resource.data.isBlocked &&
+                     request.resource.data.verificationStatus == resource.data.verificationStatus);
+      
+      // Delete: Admin only (via Manage Users panel)
+      allow delete: if isAdmin();
+    }
+
+    // Listings Collection
+    match /listings/{listingId} {
+      // Read: Approved listings are public. Owner/Admin can see pending/rejected.
+      allow read: if (resource.data.status == 'approved') || 
+                     (isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin()));
+      
+      // Create: Authenticated users can create listings.
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      
+      // Update: 
+      // 1. Admin can update everything.
+      // 2. Owner can update, BUT the status MUST be set to 'pending' (re-verification).
+      // This prevents a user from editing an 'approved' listing and keeping it 'approved' without review.
+      allow update: if isAdmin() || 
+                    (isAuthenticated() && resource.data.ownerId == request.auth.uid && request.resource.data.status == 'pending');
+      
+      // Delete: Owner or Admin.
+      allow delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    // Verifications (PAN/Aadhaar)
+    match /verifications/{verificationId} {
+        // Read/Write: Owner or Admin.
+        allow read, write: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}

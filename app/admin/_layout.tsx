@@ -10,17 +10,17 @@ export default function AdminLayout() {
     const colors = Colors[colorScheme];
     const { userProfile } = useAuth();
 
-    // Check if user is admin (Disabled for development)
-    // if (!userProfile?.isAdmin) {
-    //     return (
-    //         <View style={[styles.container, { backgroundColor: colors.background }]}>
-    //             <Text style={[styles.title, { color: colors.destructive }]}>Access Denied</Text>
-    //             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-    //                 You don't have admin privileges.
-    //             </Text>
-    //         </View>
-    //     );
-    // }
+    // Check if user is admin
+    if (!userProfile?.isAdmin) {
+        return (
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
+                <Text style={[styles.title, { color: colors.destructive }]}>Access Denied</Text>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                    You don't have admin privileges.
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <Stack

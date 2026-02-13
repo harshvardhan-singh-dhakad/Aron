@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "aron-one"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

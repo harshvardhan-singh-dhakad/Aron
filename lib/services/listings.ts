@@ -17,6 +17,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { Listing, ListingCategory, BaseListing } from '@/types';
 
+
+// Upload images to Firebase Storage
 // Upload images to Firebase Storage
 export const uploadImages = async (
     images: string[],
@@ -29,14 +31,24 @@ export const uploadImages = async (
         const imageUri = images[i];
 
         try {
-            // For web, we need to handle base64 or blob
+            console.log(`Uploading image ${i + 1}/${images.length}...`);
+            let blob: Blob;
+
+            // Handle fetch for blob, with specific handling for different URI types if needed
             const response = await fetch(imageUri);
-            const blob = await response.blob();
+            blob = await response.blob();
 
             const imageRef = ref(storage, `listings/${userId}/${listingId}/image_${i}_${Date.now()}`);
-            await uploadBytes(imageRef, blob);
+
+            // Upload with metadata
+            const metadata = {
+                contentType: blob.type || 'image/jpeg',
+            };
+
+            await uploadBytes(imageRef, blob, metadata);
 
             const downloadUrl = await getDownloadURL(imageRef);
+            console.log(`Image ${i + 1} uploaded:`, downloadUrl);
             uploadedUrls.push(downloadUrl);
         } catch (error) {
             console.error(`Error uploading image ${i}:`, error);
@@ -86,43 +98,40 @@ export const getListingsByCategory = async (
             listingsRef,
             where('category', '==', category),
             where('status', '==', 'approved'),
-            orderBy('createdAt', 'desc'),
             limit(limitCount)
         );
 
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
+        const results = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
             updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
         })) as Listing[];
+
+        return results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
         console.error('Error getting listings:', error);
         return [];
     }
 };
 
-// Get all approved listings
-export const getAllListings = async (limitCount: number = 50): Promise<Listing[]> => {
+// Get all approved listings (Public)
+export const getAllListings = async (): Promise<Listing[]> => {
     try {
-        const listingsRef = collection(db, 'listings');
-        const q = query(
-            listingsRef,
-            where('status', '==', 'approved'),
-            orderBy('createdAt', 'desc'),
-            limit(limitCount)
-        );
-
+        const q = query(collection(db, 'listings'), where('status', '==', 'approved'));
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
+
+        const listings = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-            createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
-            updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
         })) as Listing[];
+
+        // Sort by date desc (client-side)
+        return listings.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
-        console.error('Error getting all listings:', error);
+        console.error('Error getting listings:', error);
         return [];
     }
 };
@@ -133,17 +142,18 @@ export const getUserListings = async (userId: string): Promise<Listing[]> => {
         const listingsRef = collection(db, 'listings');
         const q = query(
             listingsRef,
-            where('ownerId', '==', userId),
-            orderBy('createdAt', 'desc')
+            where('ownerId', '==', userId)
         );
 
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
+        const results = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
             updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
         })) as Listing[];
+
+        return results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
         console.error('Error getting user listings:', error);
         return [];
@@ -208,7 +218,7 @@ export const searchListings = async (searchTerm: string): Promise<Listing[]> => 
         // Note: Firestore doesn't support full-text search natively
         // For production, consider using Algolia or ElasticSearch
         // This is a basic implementation that gets all approved listings
-        const listings = await getAllListings(100);
+        const listings = await getAllListings();
 
         const lowerSearchTerm = searchTerm.toLowerCase();
         return listings.filter(listing =>
@@ -228,19 +238,56 @@ export const getPendingListings = async (): Promise<Listing[]> => {
         const listingsRef = collection(db, 'listings');
         const q = query(
             listingsRef,
-            where('status', '==', 'pending'),
-            orderBy('createdAt', 'desc')
+            where('status', '==', 'pending')
         );
 
         const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({
+        const results = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: (doc.data().createdAt as Timestamp)?.toDate() || new Date(),
             updatedAt: (doc.data().updatedAt as Timestamp)?.toDate() || new Date(),
         })) as Listing[];
+
+        return results.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } catch (error) {
         console.error('Error getting pending listings:', error);
         return [];
+    }
+};
+
+// Update listing details
+export const updateListing = async (
+    listingId: string,
+    listingData: Partial<BaseListing>,
+    newImages: string[],
+    existingImages: string[]
+): Promise<boolean> => {
+    try {
+        const listingRef = doc(db, 'listings', listingId);
+
+        // Upload new images if any
+        let finalImages = [...existingImages];
+        if (newImages.length > 0) {
+            // Check if we need to get userId from the listing or passed data
+            // Assuming listingData.ownerId is present or we can fetch it
+            const snap = await getDoc(listingRef);
+            const ownerId = snap.exists() ? snap.data().ownerId : 'unknown';
+
+            const uploadedUrls = await uploadImages(newImages, ownerId, listingId);
+            finalImages = [...finalImages, ...uploadedUrls];
+        }
+
+        await updateDoc(listingRef, {
+            ...listingData,
+            images: finalImages,
+            updatedAt: serverTimestamp(),
+            status: 'pending' // Re-verify on edit
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error updating listing:', error);
+        return false;
     }
 };

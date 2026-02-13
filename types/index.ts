@@ -7,6 +7,7 @@ export interface UserProfile {
     profileCompleted: boolean;
     verificationStatus: 'none' | 'pending' | 'approved' | 'rejected';
     isAdmin: boolean;
+    isBlocked?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -19,7 +20,7 @@ export const SubCategories: Record<ListingCategory, string[]> = {
     jobs: ['Sales', 'Driver', 'Delivery', 'Office Assistant', 'Technician', 'Other'],
     services: ['Plumber', 'Electrician', 'Carpenter', 'Painter', 'Mechanic', 'Other'],
     'buy-sell': ['Electronics', 'Furniture', 'Vehicles', 'Clothing', 'Other'],
-    rent: ['Tractor', 'JCB', 'Tempo', 'Tools', 'Property', 'Other'],
+    rent: ['House', 'Room', 'Shop', 'Godown', 'Tractor', 'JCB', 'Tempo', 'Tools', 'Other'],
     business: ['Grocery', 'Restaurant', 'Salon', 'Medical', 'Hardware', 'Clothing', 'Electronics', 'Repair', 'Other'],
 };
 

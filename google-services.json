@@ -1,21 +1,30 @@
 {
   "project_info": {
-    "project_number": "96258783599",
-    "project_id": "aron-12",
-    "storage_bucket": "aron-12.firebasestorage.app"
+    "project_number": "618750765784",
+    "project_id": "aron-one",
+    "storage_bucket": "aron-one.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:96258783599:android:b8aaa83bf0900d8573909a",
+        "mobilesdk_app_id": "1:618750765784:android:4f149e941c71b96f4a85ad",
         "android_client_info": {
-          "package_name": "con.aron.app"
+          "package_name": "com.aron.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "618750765784-hf1opv9f0lk7a2emak3m14eihg1qrj1j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aron.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAo0Stq0ecPJxjFbFoJY1yxbIzEZaWzt0o"
+          "current_key": "AIzaSyDrHQKeEZ8r-0vtw2bTS3VwMxC-YAolAvo"
         }
       ],
       "services": {

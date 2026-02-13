@@ -24,10 +24,13 @@ interface Listing {
     price?: number;
     salary?: number;
     salaryType?: string;
+    pricePerUnit?: number;
     priceUnit?: string;
+    ratePerHour?: number;
     location: string;
     images: string[];
     ownerName: string;
+    ownerVerified?: boolean;
     status: string;
 }
 
@@ -80,13 +83,16 @@ export default function CategoryListingsScreen() {
     const formatPrice = (listing: Listing) => {
         if (category === 'jobs' && listing.salary) {
             const type = listing.salaryType === 'monthly' ? '/month' : listing.salaryType === 'daily' ? '/day' : '/hr';
-            return `₹${listing.salary.toLocaleString()}${type}`;
+            return `₹${listing.salary.toLocaleString('en-IN')}${type}`;
+        }
+        if (category === 'rent' && listing.pricePerUnit) {
+            return `₹${listing.pricePerUnit.toLocaleString('en-IN')}/${listing.priceUnit || 'day'}`;
+        }
+        if (category === 'services' && listing.ratePerHour) {
+            return `₹${listing.ratePerHour.toLocaleString('en-IN')}/hr`;
         }
         if (listing.price) {
-            if (category === 'rent' && listing.priceUnit) {
-                return `₹${listing.price.toLocaleString()}/${listing.priceUnit}`;
-            }
-            return `₹${listing.price.toLocaleString()}`;
+            return `₹${listing.price.toLocaleString('en-IN')}`;
         }
         return 'Contact for price';
     };

@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Admin check (via token claim OR checking boolean in DB is hard in Storage rules)
+    // Storage rules don't support get() from Firestore easily/cheaply.
+    // So we rely on Custom Claim 'admin' which we set!
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    match /{allPaths=**} {
+      // Default: deny
+      allow read, write: if false;
+    }
+
+    // Verifications folder: verifications/{userId}/{filename}
+    match /verifications/{userId}/{fileName} {
+      // User can upload their own confirmation
+      allow write: if isOwner(userId);
+      // User can read their own. Admin can read all.
+      allow read: if isOwner(userId) || isAdmin();
+    }
+    
+    // Listings folder: listings/{userId}/{listingId}/{filename}
+    match /listings/{userId}/{listingId}/{fileName} {
+       // Owner can write.
+       allow write: if isOwner(userId);
+       // Public read for listings
+       allow read: if true;
+    }
+  }
+}

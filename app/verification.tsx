@@ -117,27 +117,8 @@ export default function VerificationScreen() {
         setLoading(true);
 
         try {
-            // STEP 1: Update local state IMMEDIATELY
-            console.log('Updating local state...');
-            if (userProfile) {
-                setUserProfile({
-                    ...userProfile,
-                    verificationStatus: 'pending',
-                });
-            }
-
-            // STEP 2: Show success alert IMMEDIATELY
-            console.log('Showing success alert');
-            setLoading(false);
-
-            Alert.alert(
-                'Request Submitted! ✅',
-                'Your verification document has been submitted. We will review it within 24-48 hours.',
-                [{ text: 'OK', onPress: () => router.back() }]
-            );
-
-            // STEP 3: Save to Firestore in BACKGROUND
-            console.log('Starting background upload & save...');
+            // STEP 1: Upload and Save
+            console.log('Starting upload & save...');
             const verificationRef = doc(db, 'verifications', userIdToUse);
             const userRef = doc(db, 'users', userIdToUse);
 
@@ -145,46 +126,53 @@ export default function VerificationScreen() {
             const cleanDocNumber = documentNumber.toUpperCase().replace(/\s/g, '');
             const imagePath = `verifications/${userIdToUse}/document_${Date.now()}.jpg`;
 
-            // Start async upload and save chain
-            (async () => {
-                try {
-                    let imageUrl = '';
-                    if (documentImage) {
-                        console.log('Uploading image...', imagePath);
-                        imageUrl = await uploadImage(documentImage, imagePath);
-                        console.log('Image uploaded:', imageUrl);
-                    }
+            let imageUrl = '';
+            if (documentImage) {
+                console.log('Uploading image...', imagePath);
+                imageUrl = await uploadImage(documentImage, imagePath);
+                console.log('Image uploaded:', imageUrl);
+            }
 
-                    await Promise.all([
-                        setDoc(verificationRef, {
-                            userId: userIdToUse,
-                            userName: userProfile?.name || 'Unknown',
-                            userPhone: userProfile?.phoneNumber || '',
-                            documentType: selectedDocument,
-                            documentImage: imageUrl, // Store STORAGE URL, not local path
-                            documentNumber: cleanDocNumber,
-                            status: 'pending',
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(),
-                        }),
-                        setDoc(userRef, {
-                            verificationStatus: 'pending',
-                            updatedAt: serverTimestamp(),
-                        }, { merge: true }),
-                    ]);
-                    console.log('Background verification save completed');
-                } catch (err) {
-                    console.error('Background upload/save failed:', err);
-                    // Crucial: Create a failure record so admins know it failed?
-                    // Or revert local state? For now, we log it.
-                    // In a production app, we might retry or notify the user later.
-                }
-            })();
+            // Save to Firestore
+            await Promise.all([
+                setDoc(verificationRef, {
+                    userId: userIdToUse,
+                    userName: userProfile?.name || 'Unknown',
+                    userPhone: userProfile?.phoneNumber || '',
+                    documentType: selectedDocument,
+                    documentImage: imageUrl,
+                    documentNumber: cleanDocNumber,
+                    status: 'pending',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                }),
+                setDoc(userRef, {
+                    verificationStatus: 'pending',
+                    updatedAt: serverTimestamp(),
+                }, { merge: true }),
+            ]);
+
+            console.log('Verification saved successfully');
+
+            // STEP 2: Update local state & Show Success
+            if (userProfile) {
+                setUserProfile({
+                    ...userProfile,
+                    verificationStatus: 'pending',
+                });
+            }
+
+            setLoading(false);
+            Alert.alert(
+                'Request Submitted! ✅',
+                'Your verification document has been submitted. We will review it within 24-48 hours.',
+                [{ text: 'OK', onPress: () => router.back() }]
+            );
 
         } catch (error) {
             console.error('Error in handleSubmit:', error);
             setLoading(false);
-            Alert.alert('Error', 'Something went wrong. Please try again.');
+            Alert.alert('Upload Failed', 'Failed to upload document. Please checking your connection and try again.');
         }
     };
 
