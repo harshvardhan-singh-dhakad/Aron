@@ -1,21 +1,31 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const PARTNER_ACTIONS = [
-    { id: 'listings', label: 'My Listings', icon: 'list', count: 12 },
-    { id: 'orders', label: 'Orders Received', icon: 'cube', count: 3, badge: true },
-    { id: 'bookings', label: 'Bookings', icon: 'calendar-number', count: 0 },
-    { id: 'earnings', label: 'Earnings', icon: 'cash', value: '₹5k' },
-    { id: 'reviews', label: 'Reviews', icon: 'star', value: '4.8' },
-    { id: 'withdraw', label: 'Withdraw', icon: 'wallet', action: true },
-];
-
 import { useRouter } from 'expo-router';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCollection } from '../../hooks/useCollection';
+import { where } from 'firebase/firestore';
 
 export function PartnerPanel({ profile }: { profile: any }) {
     const router = useRouter();
+    const { user } = useAuth();
+
+    // Memoize query constraints to prevent infinite loops
+    const listingConstraints = useMemo(() => [where('ownerId', '==', user?.uid)], [user?.uid]);
+    const orderConstraints = useMemo(() => [where('sellerId', '==', user?.uid)], [user?.uid]);
+
+    const { data: listings } = useCollection('listings', ...listingConstraints);
+    const { data: orders } = useCollection('orders', ...orderConstraints);
+
+    const partnerActions = [
+        { id: 'listings', label: 'My Listings', icon: 'list', count: listings.length },
+        { id: 'orders', label: 'Orders Received', icon: 'cube', count: orders.length, badge: orders.length > 0 },
+        { id: 'bookings', label: 'Bookings', icon: 'calendar-number', count: 0 }, // Placeholder for now
+        { id: 'earnings', label: 'Earnings', icon: 'cash', value: `₹${profile.walletBalance || 0}` },
+        { id: 'reviews', label: 'Reviews', icon: 'star', value: '4.8' },
+        { id: 'withdraw', label: 'Withdraw', icon: 'wallet', action: true },
+    ];
 
     if (!profile.earnType) return null;
 
@@ -29,8 +39,12 @@ export function PartnerPanel({ profile }: { profile: any }) {
             </View>
 
             <View style={styles.grid}>
-                {PARTNER_ACTIONS.map((item) => (
-                    <TouchableOpacity key={item.id} style={styles.card} onPress={() => router.push('/(tabs)/inbox')}>
+                {partnerActions.map((item) => (
+                    <TouchableOpacity key={item.id} style={styles.card} onPress={() => {
+                        if (item.id === 'listings') router.push('/(tabs)/post-ad'); // Or listings list
+                        else if (item.id === 'orders') router.push('/(tabs)/inbox');
+                        else if (item.id === 'withdraw') router.push('/(tabs)/profile'); // Placeholder
+                    }}>
                         <Ionicons name={item.icon as any} size={24} color="#333" style={{ marginBottom: 10 }} />
                         <Text style={styles.cardLabel}>{item.label}</Text>
                         {item.count !== undefined && <Text style={styles.cardValue}>{item.count}</Text>}

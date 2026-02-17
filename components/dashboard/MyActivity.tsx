@@ -1,21 +1,38 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const ACTIVITIES = [
-    { id: '1', title: 'Active Orders', count: 2, icon: 'cart', color: '#007bff' },
-    { id: '2', title: 'Bookings', count: 0, icon: 'calendar', color: '#6f42c1' },
-    { id: '3', title: 'Rentals', count: 1, icon: 'key', color: '#fd7e14' },
-    { id: '4', title: 'Job Apps', count: 5, icon: 'briefcase', color: '#20c997' },
-];
+import { useCollection } from '../../hooks/useCollection';
+import { where } from 'firebase/firestore';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function MyActivity() {
+    const { user } = useAuth();
+
+    // Memoize query constraints
+    const orderConstraints = useMemo(() => [where('buyerId', '==', user?.uid)], [user?.uid]);
+    // Assuming we have these collections. If not, they will return empty arrays which is fine.
+    const bookingConstraints = useMemo(() => [where('customerId', '==', user?.uid)], [user?.uid]);
+    const rentalConstraints = useMemo(() => [where('tenantId', '==', user?.uid)], [user?.uid]);
+    const appConstraints = useMemo(() => [where('applicantId', '==', user?.uid)], [user?.uid]);
+
+    const { data: myOrders } = useCollection('orders', ...orderConstraints);
+    const { data: myBookings } = useCollection('bookings', ...bookingConstraints);
+    const { data: myRentals } = useCollection('rentals', ...rentalConstraints);
+    const { data: myApps } = useCollection('job_applications', ...appConstraints);
+
+    const activities = [
+        { id: '1', title: 'Active Orders', count: myOrders.length, icon: 'cart', color: '#007bff' },
+        { id: '2', title: 'Bookings', count: myBookings.length, icon: 'calendar', color: '#6f42c1' },
+        { id: '3', title: 'Rentals', count: myRentals.length, icon: 'key', color: '#fd7e14' },
+        { id: '4', title: 'Job Apps', count: myApps.length, icon: 'briefcase', color: '#20c997' },
+    ];
+
     return (
         <View style={styles.container}>
             <Text style={styles.sectionTitle}>My Activity</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
-                {ACTIVITIES.map((item) => (
+                {activities.map((item) => (
                     <TouchableOpacity key={item.id} style={styles.card}>
                         <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
                             <Ionicons name={item.icon as any} size={24} color={item.color} />
