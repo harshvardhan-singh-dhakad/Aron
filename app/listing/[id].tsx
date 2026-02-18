@@ -1,192 +1,240 @@
+
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Share, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, MapPin, Calendar, User, Briefcase, DollarSign, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
-import { Alert, View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { Listing, Application } from '../../types';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, Share2, MapPin, Tag, User as UserIcon } from 'lucide-react-native';
 import { useDoc } from '../../hooks/useDoc';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
 
 export default function ListingDetailPage() {
-  const params = useLocalSearchParams();
-  const id = params.id as string;
-  const router = useRouter();
-  const { user } = useAuth();
-  const { data: listing, loading: listingLoading } = useDoc('listings', id);
-  const { data: postedBy, loading: userLoading } = useDoc('users', listing?.ownerId || '');
-  const [isApplying, setIsApplying] = useState(false);
-  const mockListing = {
-    id: 'mock',
-    title: 'Sample Listing',
-    description: 'This is a sample listing for design purposes.',
-    category: 'services',
-    location: 'Sample City',
-    salary: '$100/hour',
-    experience: '2 years',
-    ownerId: 'mockUser',
-    imageUrl: 'https://via.placeholder.com/400x200?text=Sample+Listing',
-    createdAt: new Date(),
-  };
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const router = useRouter();
+    const { user } = useAuth();
 
-  const mockPostedBy = {
-    id: 'mockUser',
-    name: 'Sample User',
-    isVerified: true,
-  };
+    // Fetch listing data
+    const { data: listing, loading, error } = useDoc('listings', id);
 
-  const displayListing = listing || mockListing;
-  const displayPostedBy = postedBy || mockPostedBy;
-  const handleApplyOrBook = async () => {
-    if (!user) {
-      router.push('/profile');
-      return;
-    }
-    if (user.uid === displayListing.ownerId) {
-      Alert.alert('Error', 'You cannot apply to your own listing.');
-      return;
-    }
-    if (!displayListing) {
-      Alert.alert('Error', 'Listing not found.');
-      return;
-    }
-    setIsApplying(true);
-    try {
-      await addDoc(collection(db, 'applications'), {
-        listingId: id,
-        applicantId: user.uid,
-        ownerId: displayListing.ownerId,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      });
-      Alert.alert('Success', 'Application submitted successfully!');
-    } catch (error) {
-      console.error('Error applying:', error);
-      Alert.alert('Error', 'Failed to submit application.');
-    } finally {
-      setIsApplying(false);
-    }
-  };
+    const [applying, setApplying] = useState(false);
+    const [hasApplied, setHasApplied] = useState(false);
 
-  if (listingLoading || userLoading) {
+    useEffect(() => {
+        if (user && id) {
+            checkIfApplied(id, user.uid);
+        }
+    }, [user, id]);
+
+    const checkIfApplied = async (listingId: string, userId: string) => {
+        try {
+            const q = query(
+                collection(db, 'applications'),
+                where('listingId', '==', listingId),
+                where('applicantId', '==', userId)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                setHasApplied(true);
+            }
+        } catch (err) {
+            console.error("Error checking application status:", err);
+        }
+    }
+
+    const handleApply = async () => {
+        if (!user) {
+            Alert.alert('Login Required', 'Please log in to contact the owner.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Login', onPress: () => router.push('/profile') }
+            ]);
+            return;
+        }
+
+        if (!listing) return;
+
+        setApplying(true);
+
+        try {
+            const newApp: Omit<Application, 'id'> = {
+                listingId: listing.id,
+                applicantId: user.uid,
+                ownerId: listing.createdBy,
+                status: 'pending',
+                appliedAt: new Date(),
+                listingTitle: listing.title
+            };
+
+            await addDoc(collection(db, 'applications'), newApp);
+
+            setHasApplied(true);
+            Alert.alert('Success', 'Application sent successfully! The owner will contact you shortly.');
+        } catch (err) {
+            console.error(err);
+            Alert.alert('Error', 'Failed to send application. Please try again.');
+        } finally {
+            setApplying(false);
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            // Native share
+            await Share.share({
+                message: `Check out this listing on Kaam Kiraya: ${listing?.title} - ${listing?.description}`,
+                url: `https://kaamkiraya.app/listing/${listing?.id}`, // Mock URL
+            });
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    const getPrice = (listing: Listing) => {
+        if (listing.price) return `₹${listing.price}`;
+        if (listing.rent) return `₹${listing.rent}/mo`;
+        if (listing.salary) return `₹${listing.salary}/mo`;
+        return 'Contact for Price';
+    }
+
+    if (loading) {
+        return (
+            <View className="flex-1 justify-center items-center bg-white">
+                <ActivityIndicator size="large" color="#000" />
+            </View>
+        );
+    }
+
+    if (!listing) {
+        return (
+            <SafeAreaView className="flex-1 bg-white justify-center items-center">
+                <Text className="text-gray-500 text-lg">Listing not found</Text>
+                <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-black px-6 py-3 rounded-full">
+                    <Text className="text-white font-bold">Go Back</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
+
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  const postedDate = displayListing.createdAt && typeof (displayListing.createdAt as any).toDate === 'function' 
-    ? (displayListing.createdAt as any).toDate() 
-    : new Date(displayListing.createdAt as any);
-
-  const isJob = displayListing.category === 'jobs';
-  const buttonText = isJob ? 'Apply Now' : 'Book Now';
-  const isButtonDisabled = user ? user.uid === displayListing.ownerId : false;
-
-  return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <View style={{ padding: 16 }}>
-        {/* Back */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'white', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}>
-            <ArrowLeft size={20} />
-          </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontWeight: '600', marginLeft: 12 }}>Listing Details</Text>
-        </View>
-
-
-        {/* Image */}
-        <View style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', backgroundColor: '#e0e0e0' }}>
-          <Image source={{ uri: displayListing.imageUrl || 'https://via.placeholder.com/400x200' }} style={{ width: '100%', height: 200 }} />
-        </View>
-
-        {/* Title + location */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 20, fontWeight: '600', marginBottom: 4 }}>{displayListing.title}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <MapPin size={16} color="#666" />
-            <Text style={{ fontSize: 14, color: '#666', marginLeft: 4 }}>{displayListing.location}</Text>
-          </View>
-        </View>
-
-        {/* Info cards */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-          {displayListing.salary && (
-            <View style={{ width: '48%', backgroundColor: 'white', borderRadius: 12, padding: 12, marginRight: '4%', marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                <DollarSign size={18} color="#16a34a" />
-                <Text style={{ fontSize: 14, fontWeight: '500', marginLeft: 8 }}>{isJob ? 'Salary' : 'Rate'}</Text>
-              </View>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#16a34a' }}>{displayListing.salary}</Text>
+        <SafeAreaView className="flex-1 bg-white">
+            <View className="flex-row items-center p-4 border-b border-gray-100 bg-white">
+                <TouchableOpacity onPress={() => router.back()} className="mr-4 p-1">
+                    <ArrowLeft size={24} color="black" />
+                </TouchableOpacity>
+                <Text className="text-lg font-bold flex-1" numberOfLines={1}>{listing.title}</Text>
+                <TouchableOpacity onPress={handleShare} className="p-1">
+                    <Share2 size={24} color="black" />
+                </TouchableOpacity>
             </View>
-          )}
 
-          {displayListing.experience && (
-            <View style={{ width: '48%', backgroundColor: 'white', borderRadius: 12, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                <Briefcase size={18} color="#2563eb" />
-                <Text style={{ fontSize: 14, fontWeight: '500', marginLeft: 8 }}>Experience</Text>
-              </View>
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#1f2937' }}>{displayListing.experience}</Text>
-            </View>
-          )}
-
-          <View style={{ width: '100%', backgroundColor: 'white', borderRadius: 12, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <User size={18} color="#9333ea" />
-              <Text style={{ fontSize: 14, fontWeight: '500', marginLeft: 8 }}>Posted by</Text>
-            </View>
-            {displayPostedBy && (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#1f2937' }}>{displayPostedBy.name}</Text>
-                {displayPostedBy.isVerified && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
-                    <CheckCircle size={16} color="#16a34a" />
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#16a34a', marginLeft: 2 }}>Verified</Text>
-                  </View>
+            <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
+                {/* Image Section */}
+                {listing.images && listing.images.length > 0 ? (
+                    <Image
+                        source={{ uri: listing.images[0] }}
+                        className="w-full h-64 bg-gray-200"
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View className="w-full h-48 bg-gray-100 items-center justify-center">
+                        <Text className="text-gray-400">No Image Available</Text>
+                    </View>
                 )}
-              </View>
-            )}
-            {displayListing.createdAt && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                <Calendar size={14} color="#6b7280" />
-                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 4 }}>Posted on {postedDate.toLocaleDateString()}</Text>
-              </View>
-            )}
-          </View>
-        </View>
 
-        {/* Description */}
-        <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>Job / Service Description</Text>
-          <Text style={{ fontSize: 14, color: '#374151', lineHeight: 20 }}>{displayListing.description}</Text>
-        </View>
+                <View className="p-5">
+                    <View className="flex-row justify-between items-start mb-4">
+                        <View className="bg-blue-50 px-3 py-1 rounded-md self-start">
+                            <Text className="text-xs font-bold text-blue-700 uppercase tracking-wide">{listing.category}</Text>
+                        </View>
+                        <Text className="text-xs text-gray-400">
+                            Posted {listing.createdAt?.toDate ? listing.createdAt.toDate().toLocaleDateString() : new Date(listing.createdAt).toLocaleDateString()}
+                        </Text>
+                    </View>
 
-        {/* Actions */}
-        <View style={{ backgroundColor: 'white', borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 12 }}>Actions</Text>
-          <TouchableOpacity
-            onPress={handleApplyOrBook}
-            disabled={isButtonDisabled || isApplying}
-            style={{
-              backgroundColor: isButtonDisabled ? '#d1d5db' : '#007bff',
-              padding: 12,
-              borderRadius: 8,
-              alignItems: 'center',
-              opacity: isApplying ? 0.7 : 1
-            }}
-          >
-            {isApplying ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={{ color: 'white', fontWeight: '600' }}>{buttonText}</Text>
-            )}
-          </TouchableOpacity>
-          {isButtonDisabled && (
-            <Text style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', marginTop: 8 }}>You cannot apply to your own listing.</Text>
-          )}
-        </View>
-      </View>
-    </ScrollView>
-  );
+                    <Text className="text-2xl font-bold mb-2 text-gray-900 leading-tight">{listing.title}</Text>
+
+                    <View className="flex-row items-center mb-6 mt-1">
+                        <Text className="text-xl font-bold text-blue-600">
+                            {getPrice(listing)}
+                        </Text>
+                    </View>
+
+                    <View className="flex-row items-center mb-6 bg-gray-50 p-3 rounded-lg">
+                        <MapPin size={18} color="#4B5563" />
+                        <Text className="ml-2 text-gray-600 font-medium">{listing.location}</Text>
+                    </View>
+
+                    {/* Owner Info */}
+                    <View className="flex-row items-center mb-6 pb-6 border-b border-gray-100">
+                        <Image
+                            source={{ uri: listing.ownerImage || 'https://via.placeholder.com/50' }}
+                            className="w-12 h-12 rounded-full bg-gray-200 mr-3"
+                        />
+                        <View>
+                            <Text className="font-bold text-gray-900 text-base">{listing.ownerName || 'Kaam Kiraya User'}</Text>
+                            <Text className="text-gray-500 text-sm">Verified Poster</Text>
+                        </View>
+                    </View>
+
+                    <View className="mb-8">
+                        <Text className="font-bold text-lg mb-3 text-gray-900">Description</Text>
+                        <Text className="text-gray-600 leading-7 text-base">{listing.description}</Text>
+                    </View>
+
+                    {/* Additional Details based on Mock Data */}
+                    <View className="bg-gray-50 rounded-xl p-4 mb-24">
+                        <Text className="font-bold mb-3 text-gray-900">Additional Details</Text>
+
+                        {listing.condition && (
+                            <View className="flex-row justify-between py-2 border-b border-gray-200 border-dashed">
+                                <Text className="text-gray-500">Condition</Text>
+                                <Text className="font-medium text-gray-900 capitalize">{listing.condition}</Text>
+                            </View>
+                        )}
+                        {listing.jobType && (
+                            <View className="flex-row justify-between py-2 border-b border-gray-200 border-dashed">
+                                <Text className="text-gray-500">Job Type</Text>
+                                <Text className="font-medium text-gray-900 capitalize">{listing.jobType}</Text>
+                            </View>
+                        )}
+                        {listing.period && (
+                            <View className="flex-row justify-between py-2 border-b border-gray-200 border-dashed">
+                                <Text className="text-gray-500">Rent Period</Text>
+                                <Text className="font-medium text-gray-900 capitalize">{listing.period}</Text>
+                            </View>
+                        )}
+                        <View className="flex-row justify-between py-2">
+                            <Text className="text-gray-500">Listing ID</Text>
+                            <Text className="font-medium text-gray-900">#{listing.id.substring(0, 8)}</Text>
+                        </View>
+                    </View>
+
+                </View>
+            </ScrollView>
+
+            {/* Footer Action */}
+            <View className="absolute bottom-0 w-full bg-white border-t border-gray-200 p-4 safe-area-bottom shadow-lg">
+                {user?.uid === listing.createdBy ? (
+                    <TouchableOpacity className="bg-gray-100 w-full py-4 rounded-xl items-center border border-gray-200">
+                        <Text className="font-bold text-gray-500">You posted this listing</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        onPress={handleApply}
+                        disabled={hasApplied || applying}
+                        className={`w-full py-4 rounded-xl items-center shadow-md active:scale-[0.98] transition-all ${hasApplied ? 'bg-green-600' : 'bg-black'}`}
+                    >
+                        {applying ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <Text className="text-white font-bold text-lg">
+                                {hasApplied ? 'Request Sent' : 'Contact / Apply Now'}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                )}
+            </View>
+        </SafeAreaView>
+    );
 }

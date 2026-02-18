@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,8 +21,7 @@ export function Step1BasicInfo({ onNext, initialData }: any) {
         (async () => {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Permission to access location was denied');
-                return;
+                // Optional: Alert.alert('Permission to access location was denied');
             }
         })();
     }, []);
@@ -53,103 +52,122 @@ export function Step1BasicInfo({ onNext, initialData }: any) {
                 setLocation(`${addr.city}, ${addr.region}`);
             }
         } catch (error) {
-            Alert.alert('Error', 'Could not fetch location');
+            Alert.alert('Error', 'Could not fetch location. Please enter manually.');
         }
         setLoadingLocation(false);
     };
 
     const handleNext = () => {
         if (!name || !phone || !city) {
-            Alert.alert('Error', 'Please fill all required fields');
+            Alert.alert('Incomplete Profile', 'Please fill in your Name, Phone and City.');
             return;
         }
         onNext({ name, phone, photoURL: image, location, city, state, pincode });
     };
 
     return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.header}>Help us confirm it's you!</Text>
-            <Text style={styles.subHeader}>Step 1: Basic Info</Text>
+        <ScrollView className="flex-1 bg-white p-6" contentContainerStyle={{ paddingBottom: 40 }}>
+            <View className="mb-8">
+                <Text className="text-2xl font-bold text-black mb-2">Help us confirm it's you!</Text>
+                <Text className="text-gray-500 text-base">Step 1: Basic Info</Text>
+            </View>
 
-            <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+            <TouchableOpacity onPress={pickImage} className="self-center mb-8 relative">
                 {image ? (
-                    <Image source={{ uri: image }} style={styles.image} />
+                    <Image source={{ uri: image }} className="w-28 h-28 rounded-full border-2 border-gray-100" />
                 ) : (
-                    <View style={styles.placeholderImage}>
-                        <Ionicons name="camera" size={40} color="#ccc" />
-                        <Text style={{ color: '#ccc' }}>Upload Photo</Text>
+                    <View className="w-28 h-28 rounded-full bg-gray-100 items-center justify-center border-2 border-dashed border-gray-300">
+                        <Ionicons name="camera" size={32} color="#9ca3af" />
+                        <Text className="text-gray-400 text-xs mt-1">Upload Photo</Text>
                     </View>
                 )}
+                <View className="absolute bottom-0 right-0 bg-black p-2 rounded-full border-2 border-white">
+                    <Ionicons name="pencil" size={16} color="white" />
+                </View>
             </TouchableOpacity>
 
-            <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full Name</Text>
-                <TextInput
-                    style={styles.input}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Enter your full name"
-                />
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number</Text>
-                <TextInput
-                    style={[styles.input, { backgroundColor: '#f0f0f0' }]}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="Enter your phone number"
-                    editable={!user?.phoneNumber} // Editable only if not from auth
-                    keyboardType="phone-pad"
-                />
-                {user?.phoneNumber && <Text style={styles.verifiedText}>✓ Verified</Text>}
-            </View>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.label}>Location</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View className="space-y-4">
+                <View>
+                    <Text className="text-sm font-medium text-gray-700 ml-1 mb-1">Full Name</Text>
                     <TextInput
-                        style={[styles.input, { flex: 1, marginRight: 10 }]}
-                        value={city}
-                        editable={false}
-                        placeholder="Auto-detected City"
+                        className="border border-gray-300 rounded-xl p-4 text-lg bg-gray-50 text-black"
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="John Doe"
+                        placeholderTextColor="#9ca3af"
                     />
-                    <TouchableOpacity onPress={detectLocation} style={styles.locationButton} disabled={loadingLocation}>
-                        {loadingLocation ? <ActivityIndicator color="white" /> : <Ionicons name="location" size={20} color="white" />}
-                    </TouchableOpacity>
+                </View>
+
+                <View>
+                    <Text className="text-sm font-medium text-gray-700 ml-1 mb-1">Phone Number</Text>
+                    <View className="relative">
+                        <TextInput
+                            className="border border-gray-300 rounded-xl p-4 text-lg bg-gray-100 text-gray-500"
+                            value={phone}
+                            onChangeText={setPhone}
+                            placeholder="+91 98765 43210"
+                            editable={!user?.phoneNumber}
+                            keyboardType="phone-pad"
+                        />
+                        {user?.phoneNumber && (
+                            <View className="absolute right-4 top-4">
+                                <Ionicons name="checkmark-circle" size={24} color="green" />
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                <View>
+                    <Text className="text-sm font-medium text-gray-700 ml-1 mb-1">City / Location</Text>
+                    <View className="flex-row items-center border border-gray-300 rounded-xl bg-gray-50 overflow-hidden">
+                        <TextInput
+                            className="flex-1 p-4 text-lg text-black"
+                            value={city}
+                            onChangeText={setCity} // Allow manual edit if detection fails
+                            placeholder="Detecting..."
+                            placeholderTextColor="#9ca3af"
+                        />
+                        <TouchableOpacity
+                            onPress={detectLocation}
+                            disabled={loadingLocation}
+                            className="p-4 bg-gray-200 border-l border-gray-300 active:bg-gray-300"
+                        >
+                            {loadingLocation ? <ActivityIndicator color="black" /> : <Ionicons name="locate" size={24} color="black" />}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View className="flex-row space-x-4">
+                    <View className="flex-1">
+                        <Text className="text-sm font-medium text-gray-700 ml-1 mb-1">State</Text>
+                        <TextInput
+                            className="border border-gray-300 rounded-xl p-4 text-lg bg-gray-50 text-black"
+                            value={state}
+                            onChangeText={setState}
+                            placeholder="State"
+                            placeholderTextColor="#9ca3af"
+                        />
+                    </View>
+                    <View className="flex-1">
+                        <Text className="text-sm font-medium text-gray-700 ml-1 mb-1">Pincode</Text>
+                        <TextInput
+                            className="border border-gray-300 rounded-xl p-4 text-lg bg-gray-50 text-black"
+                            value={pincode}
+                            onChangeText={setPincode}
+                            placeholder="Pincode"
+                            keyboardType="numeric"
+                            placeholderTextColor="#9ca3af"
+                        />
+                    </View>
                 </View>
             </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <View style={[styles.inputGroup, { width: '48%' }]}>
-                    <Text style={styles.label}>State</Text>
-                    <TextInput style={styles.input} value={state} onChangeText={setState} placeholder="State" />
-                </View>
-                <View style={[styles.inputGroup, { width: '48%' }]}>
-                    <Text style={styles.label}>Pincode</Text>
-                    <TextInput style={styles.input} value={pincode} onChangeText={setPincode} placeholder="Pincode" keyboardType="numeric" />
-                </View>
-            </View>
-
-            <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
-                <Text style={styles.nextButtonText}>Next Step →</Text>
+            <TouchableOpacity
+                onPress={handleNext}
+                className="bg-black p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all mt-8"
+            >
+                <Text className="text-white font-bold text-lg">Next Step</Text>
             </TouchableOpacity>
         </ScrollView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { padding: 20, backgroundColor: 'white', flex: 1 },
-    header: { fontSize: 24, fontWeight: 'bold', marginBottom: 10, color: '#333' },
-    subHeader: { fontSize: 16, color: '#666', marginBottom: 20 },
-    imageContainer: { alignSelf: 'center', marginBottom: 20 },
-    image: { width: 100, height: 100, borderRadius: 50 },
-    placeholderImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' },
-    inputGroup: { marginBottom: 15 },
-    label: { fontSize: 14, fontWeight: '600', marginBottom: 5, color: '#333' },
-    input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 12, fontSize: 16 },
-    verifiedText: { color: 'green', fontSize: 12, marginTop: 5 },
-    locationButton: { backgroundColor: '#007bff', padding: 12, borderRadius: 8 },
-    nextButton: { backgroundColor: '#007bff', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20, marginBottom: 40 },
-    nextButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-});

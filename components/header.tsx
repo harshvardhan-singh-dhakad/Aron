@@ -1,33 +1,26 @@
-import Link from 'next/link';
-import { MapPin, Inbox, User } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from './ui/button';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Inbox, User } from 'lucide-react-native';
 
 export default function Header() {
+  const router = useRouter();
+
   return (
-    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-sm border-b">
-      <div className="container mx-auto flex items-center justify-between h-16 px-4 max-w-7xl">
-        <div className="md:hidden">
-          <Link href="/" className="text-2xl font-bold font-headline text-primary">
-            Kaam Kiraya
-          </Link>
-        </div>
-        <div className="hidden md:block flex-1" />
-        <div className="flex items-center gap-2">
-            <Link href="/inbox" passHref>
-              <Button variant="ghost" size="icon" className="relative">
-                  <Inbox className="h-5 w-5" />
-                  {/* Optional: Add a notification dot */}
-                  {/* <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" /> */}
-              </Button>
-            </Link>
-            <Link href="/profile" passHref>
-              <Button variant="ghost" size="icon" className="relative">
-                  <User className="h-5 w-5" />
-              </Button>
-            </Link>
-        </div>
-      </div>
-    </header>
+    <View className="flex-row items-center justify-between h-16 px-4 bg-white border-b border-gray-200">
+      <TouchableOpacity onPress={() => router.push('/')}>
+        <Text className="text-2xl font-bold text-blue-600">Aron</Text>
+      </TouchableOpacity>
+
+      <View className="flex-1" />
+
+      <View className="flex-row items-center gap-4">
+        <TouchableOpacity onPress={() => router.push('/inbox')} className="p-2">
+          <Inbox size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/profile')} className="p-2">
+          <User size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }

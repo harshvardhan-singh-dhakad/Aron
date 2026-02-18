@@ -30,7 +30,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
             await setDoc(doc(db, 'users', user!.uid), {
                 ...completeData,
                 createdAt: new Date(),
-                onodeboardingCompleted: true,
+                onboardingCompleted: true,
                 verified: false, // Default to false until admin verifies
                 walletBalance: 0,
                 aronScore: 100, // Default start score

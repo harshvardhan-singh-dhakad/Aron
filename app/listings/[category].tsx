@@ -1,10 +1,12 @@
+
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { mockListings } from '../../constants/mockData';
 import { Listing } from '../../types';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
+import { useCollection } from '../../hooks/useCollection';
+import { where, orderBy } from 'firebase/firestore';
 
 const subCategories: Record<string, string[]> = {
   jobs: ['Full-time', 'Part-time', 'Contract', 'Temporary'],
@@ -16,41 +18,27 @@ const subCategories: Record<string, string[]> = {
 export default function CategoryListingsPage() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const router = useRouter();
-  const [listings, setListings] = useState<Listing[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (category) {
-      fetchListings();
+  const { data: listings, loading } = useCollection(
+    'listings',
+    where('category', '==', category),
+    orderBy('createdAt', 'desc')
+  );
+
+  const filteredListings = useMemo(() => {
+    let result = listings as Listing[];
+    // Client-side filtering for subcategories/keywords
+    if (filter) {
+      const lowerFilter = filter.toLowerCase();
+      result = result.filter(l =>
+        (l.jobType && l.jobType.toLowerCase() === lowerFilter) ||
+        l.description.toLowerCase().includes(lowerFilter) ||
+        l.title.toLowerCase().includes(lowerFilter)
+      );
     }
-  }, [category, filter]);
-
-  const fetchListings = () => {
-    setLoading(true);
-    // Simulate network request
-    setTimeout(() => {
-        let filtered = mockListings.filter(
-            l => l.category === category && l.isVerifiedPost === true
-        );
-        
-        // Mock subcategory filtering logic (based on description or other fields as mock data lacks explicit subcategory)
-        if (filter) {
-             const lowerFilter = filter.toLowerCase();
-             filtered = filtered.filter(l => 
-                 (l.jobType && l.jobType === lowerFilter) ||
-                 l.description.toLowerCase().includes(lowerFilter) ||
-                 l.title.toLowerCase().includes(lowerFilter)
-             );
-        }
-        
-        // Sort by newest
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        setListings(filtered);
-        setLoading(false);
-    }, 800);
-  };
+    return result;
+  }, [listings, filter]);
 
   const currentSubCats = subCategories[category as string] || [];
 
@@ -72,7 +60,7 @@ export default function CategoryListingsPage() {
 
       <View className="py-3 bg-white border-b border-gray-100">
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row px-4">
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setFilter(null)}
             className={`px-5 py-2 rounded-full border mr-2 ${filter === null ? 'bg-black border-black' : 'bg-white border-gray-300'}`}
           >
@@ -97,28 +85,35 @@ export default function CategoryListingsPage() {
         </View>
       ) : (
         <ScrollView className="px-4 pt-4" showsVerticalScrollIndicator={false}>
-          {listings.length === 0 ? (
+          {filteredListings.length === 0 ? (
             <View className="items-center justify-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200 mt-4">
-                <Text className="text-gray-400 text-lg font-medium">No listings found</Text>
-                <Text className="text-gray-400 text-sm mt-1">Try changing filters or check back later.</Text>
+              <Text className="text-gray-400 text-lg font-medium">No listings found</Text>
+              <Text className="text-gray-400 text-sm mt-1">Try changing filters or check back later.</Text>
             </View>
           ) : (
-            listings.map((listing) => (
-              <TouchableOpacity 
-                key={listing.id} 
+            filteredListings.map((listing) => (
+              <TouchableOpacity
+                key={listing.id}
                 onPress={() => router.push(`/listing/${listing.id}`)}
                 className="mb-4 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm active:bg-gray-50 transition-colors"
               >
                 <View className="flex-row justify-between items-start">
-                    <View className="flex-1 pr-4">
-                        <Text className="font-bold text-lg text-gray-900 mb-1 leading-6">{listing.title}</Text>
-                        <Text className="text-sm text-gray-500 mb-2" numberOfLines={2}>{listing.description}</Text>
-                        <Text className="text-xs text-gray-400 font-medium">{listing.location}</Text>
-                    </View>
-                    <View className="items-end">
-                        <Text className="font-bold text-blue-600 text-lg">{getPrice(listing)}</Text>
-                        <Text className="text-[10px] text-gray-400 mt-1">{listing.createdAt.toLocaleDateString()}</Text>
-                    </View>
+                  <View className="flex-1 pr-4">
+                    <Text className="font-bold text-lg text-gray-900 mb-1 leading-6">{listing.title}</Text>
+                    <Text className="text-sm text-gray-500 mb-2" numberOfLines={2}>{listing.description}</Text>
+                    <Text className="text-xs text-gray-400 font-medium">{listing.location}</Text>
+                  </View>
+                  <View className="items-end">
+                    <Text className="font-bold text-blue-600 text-lg">{getPrice(listing)}</Text>
+                    <Text className="text-[10px] text-gray-400 mt-1">
+                      {listing.createdAt instanceof Date
+                        ? listing.createdAt.toLocaleDateString()
+                        : (listing.createdAt as any)?.toDate
+                          ? (listing.createdAt as any).toDate().toLocaleDateString()
+                          : new Date(listing.createdAt as any).toLocaleDateString()
+                      }
+                    </Text>
+                  </View>
                 </View>
               </TouchableOpacity>
             ))

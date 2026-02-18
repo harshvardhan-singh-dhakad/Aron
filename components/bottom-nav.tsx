@@ -1,52 +1,44 @@
-'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Store, User, TrendingUp, Wrench } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-const navItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/listings/rent', label: 'Kiraya', icon: TrendingUp },
-  { href: '/listings/services', label: 'Services', icon: Wrench },
-  { href: '/listings/jobs', label: 'Jobs', icon: Briefcase },
-  { href: '/listings/buy-sell', label: 'Buy/Sell', icon: Store },
-];
+import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
+import { Home, Search, PlusCircle, MessageSquare, User, TrendingUp, Briefcase, Wrench, ShoppingBag } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function BottomNav() {
+  const router = useRouter();
   const pathname = usePathname();
 
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 bg-white border-t border-gray-200 md:hidden">
-      <div className="mx-auto grid h-full max-w-md grid-cols-5 items-center">
-        {navItems.map(item => {
-          const isActive =
-            (item.href === '/' && pathname === item.href) ||
-            (item.href !== '/' && pathname.startsWith(item.href));
-            
-          const isBuySellActive = item.href.includes('buy-sell') && isActive;
+  const tabs = [
+    { name: 'Home', icon: Home, route: '/' },
+    { name: 'Kiraya', icon: TrendingUp, route: '/listings/rentals' },
+    { name: 'Jobs', icon: Briefcase, route: '/listings/jobs' },
+    { name: 'Services', icon: Wrench, route: '/listings/services' },
+    { name: 'Buy/Sell', icon: ShoppingBag, route: '/listings/buy-sell' },
+  ];
 
+  return (
+    <SafeAreaView edges={['bottom']} className="bg-white border-t border-gray-200">
+      <View className="flex-row justify-around items-center h-16">
+        {tabs.map((tab) => {
+          const isActive = pathname === tab.route || (tab.route !== '/' && pathname.startsWith(tab.route));
           return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={cn(
-                'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                isActive
-                  ? isBuySellActive ? 'text-green-600' : 'text-primary'
-                  : 'text-gray-500 hover:text-primary'
-              )}
+            <TouchableOpacity
+              key={tab.name}
+              onPress={() => router.push(tab.route as any)}
+              className="items-center justify-center flex-1"
             >
-              <item.icon
-                className="h-5 w-5"
-                fill={isActive ? 'currentColor' : 'none'}
+              <tab.icon
+                size={24}
+                color={isActive ? '#000' : '#9CA3AF'}
+                strokeWidth={isActive ? 2.5 : 2}
               />
-              <span className={cn(isActive && 'font-bold')}>
-                {item.label}
-              </span>
-            </Link>
+              <Text className={`text-[10px] mt-1 ${isActive ? 'font-bold text-black' : 'text-gray-400'}`}>
+                {tab.name}
+              </Text>
+            </TouchableOpacity>
           );
         })}
-      </div>
-    </nav>
+      </View>
+    </SafeAreaView>
   );
 }

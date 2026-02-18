@@ -1,8 +1,6 @@
-'use client';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Wrench, User, TrendingUp, Store } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
+import { Home, Briefcase, Wrench, User, TrendingUp, Store } from 'lucide-react-native';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
@@ -14,16 +12,19 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+  const router = useRouter();
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 flex-col border-r bg-white hidden md:flex">
-      <div className="flex h-16 items-center border-b px-6">
-        <Link href="/" className="text-2xl font-bold font-headline text-primary">
-          Kaam Kiraya
-        </Link>
-      </div>
-      <nav className="flex flex-col gap-1 p-4">
+    <View className="w-64 flex-col border-r border-gray-200 bg-white hidden md:flex h-full">
+      <View className="flex h-16 items-center border-b border-gray-200 px-6 justify-center">
+        <TouchableOpacity onPress={() => router.push('/')}>
+          <Text className="text-2xl font-bold text-blue-600">
+            Aron
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView className="flex-1 p-4">
         {navItems.map(item => {
           const isActive =
             (item.href === '/' && pathname === item.href) ||
@@ -36,25 +37,20 @@ export default function Sidebar() {
           const isBuySellActive = item.href.includes('buy-sell') && isActive;
 
           return (
-            <Link
+            <TouchableOpacity
               key={item.label}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-4 py-3 text-gray-600 transition-all hover:bg-gray-100 hover:text-gray-900',
-                isActive ? 'font-bold text-primary bg-primary/10' : 'font-medium',
-                isServicesActive && 'text-green-600 bg-green-500/10',
-                isKirayaActive && 'text-blue-600 bg-blue-500/10',
-                isJobsActive && 'text-purple-600 bg-purple-500/10',
-                isProfileActive && 'text-orange-600 bg-orange-500/10',
-                isBuySellActive && 'text-teal-600 bg-teal-500/10'
-              )}
+              onPress={() => router.push(item.href as any)}
+              className={`flex-row items-center gap-3 rounded-lg px-4 py-3 mb-1 transition-all ${isActive ? 'bg-blue-50' : ''
+                } ${isServicesActive ? 'bg-green-50' : ''} ${isKirayaActive ? 'bg-blue-50' : ''} ${isJobsActive ? 'bg-purple-50' : ''} ${isProfileActive ? 'bg-orange-50' : ''} ${isBuySellActive ? 'bg-teal-50' : ''}`}
             >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </Link>
+              <item.icon size={20} color={isActive ? '#2563EB' : '#4B5563'} />
+              <Text className={`${isActive ? 'font-bold text-blue-600' : 'font-medium text-gray-600'}`}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
           );
         })}
-      </nav>
-    </aside>
+      </ScrollView>
+    </View>
   );
 }

@@ -1,29 +1,31 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+
+import '../global.css';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View } from 'react-native';
+import BottomTab from '../components/bottom-nav';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '../contexts/AuthContext';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <AuthProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="listing/[id]" options={{ title: 'Listing Details' }} />
-          <Stack.Screen name="listings/[categoryId]" options={{ title: 'Category Listings' }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <View className="flex-1 bg-white">
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="profile" />
+            <Stack.Screen name="listings/[category]" />
+            <Stack.Screen name="listing/[id]" />
+            <Stack.Screen name="post-ad" />
+            <Stack.Screen name="inbox" />
+            <Stack.Screen name="search" />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+          <BottomTab />
+          <StatusBar style="auto" />
+        </View>
+      </SafeAreaProvider>
     </AuthProvider>
   );
 }
