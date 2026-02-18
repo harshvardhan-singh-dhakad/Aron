@@ -9,23 +9,21 @@ import { useCollection } from '../hooks/useCollection';
 import { orderBy, limit } from 'firebase/firestore';
 import Header from '../components/header';
 
-const categories = [
-  { name: 'Buy/Sell Products', id: 'buy-sell', icon: ShoppingBag, color: 'text-rose-500', bg: 'bg-rose-50', hex: '#f43f5e' },
-  { name: 'Rentals', id: 'rentals', icon: Home, color: 'text-sky-500', bg: 'bg-sky-50', hex: '#0ea5e9' },
-  { name: 'Find Jobs', id: 'jobs', icon: Briefcase, color: 'text-violet-500', bg: 'bg-violet-50', hex: '#8b5cf6' },
-  { name: 'Hire Workers', id: 'hire', icon: UserPlus, color: 'text-indigo-500', bg: 'bg-indigo-50', hex: '#6366f1' },
-  { name: 'Provide Services', id: 'services', icon: Wrench, color: 'text-emerald-500', bg: 'bg-emerald-50', hex: '#10b981' },
-  { name: 'Business Owner', id: 'business', icon: Store, color: 'text-amber-500', bg: 'bg-amber-50', hex: '#f59e0b' },
-];
+import { CATEGORIES as categories } from '../constants/categories'; // Alias to keep existing map logic
+
 
 export default function HomePage() {
   const router = useRouter();
 
   // Fetch listings sorted by createdAt descending
-  const { data: listings, loading, error } = useCollection(
-    'listings',
+  const queryConstraints = useMemo(() => [
     orderBy('createdAt', 'desc'),
     limit(10)
+  ], []);
+
+  const { data: listings, loading, error } = useCollection(
+    'listings',
+    ...queryConstraints
   );
 
   const [refreshing, setRefreshing] = useState(false);

@@ -3,6 +3,7 @@ export interface Listing {
     id: string;
     title: string;
     category: string;
+    subCategory?: string;
     price?: number;
     rent?: number;
     salary?: number;

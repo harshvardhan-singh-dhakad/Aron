@@ -7,40 +7,34 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { useCollection } from '../../hooks/useCollection';
 import { where, orderBy } from 'firebase/firestore';
-
-const subCategories: Record<string, string[]> = {
-  jobs: ['Full-time', 'Part-time', 'Contract', 'Temporary'],
-  services: ['Plumbing', 'Electrical', 'Cleaning', 'Repairs'],
-  'buy-sell': ['Electronics', 'Furniture', 'Vehicles', 'Others'],
-  rentals: ['Apartment', 'House', 'Room', 'Commercial'],
-};
+import { CATEGORIES } from '../../constants/categories';
 
 export default function CategoryListingsPage() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const router = useRouter();
   const [filter, setFilter] = useState<string | null>(null);
 
-  const { data: listings, loading } = useCollection(
-    'listings',
+  // Memoize query constraints
+  const queryConstraints = useMemo(() => [
     where('category', '==', category),
     orderBy('createdAt', 'desc')
+  ], [category]);
+
+  const { data: listings, loading } = useCollection(
+    'listings',
+    ...queryConstraints
   );
 
   const filteredListings = useMemo(() => {
     let result = listings as Listing[];
-    // Client-side filtering for subcategories/keywords
     if (filter) {
-      const lowerFilter = filter.toLowerCase();
-      result = result.filter(l =>
-        (l.jobType && l.jobType.toLowerCase() === lowerFilter) ||
-        l.description.toLowerCase().includes(lowerFilter) ||
-        l.title.toLowerCase().includes(lowerFilter)
-      );
+      result = result.filter(l => l.subCategory === filter);
     }
     return result;
   }, [listings, filter]);
 
-  const currentSubCats = subCategories[category as string] || [];
+  const currentCategoryData = CATEGORIES.find(c => c.id === category);
+  const currentSubCats = currentCategoryData?.subcategories || [];
 
   const getPrice = (listing: Listing) => {
     if (listing.price) return `₹${listing.price}`;
@@ -55,7 +49,7 @@ export default function CategoryListingsPage() {
         <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
           <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
-        <Text className="text-xl font-bold capitalize text-gray-900">{category}</Text>
+        <Text className="text-xl font-bold capitalize text-gray-900">{currentCategoryData?.name || category}</Text>
       </View>
 
       <View className="py-3 bg-white border-b border-gray-100">
@@ -68,11 +62,11 @@ export default function CategoryListingsPage() {
           </TouchableOpacity>
           {currentSubCats.map((sub, index) => (
             <TouchableOpacity
-              key={sub}
-              onPress={() => setFilter(sub)}
-              className={`px-5 py-2 rounded-full border mr-2 ${filter === sub ? 'bg-black border-black' : 'bg-white border-gray-300'} ${index === currentSubCats.length - 1 ? 'mr-8' : ''}`}
+              key={sub.value}
+              onPress={() => setFilter(sub.value)}
+              className={`px-5 py-2 rounded-full border mr-2 ${filter === sub.value ? 'bg-black border-black' : 'bg-white border-gray-300'} ${index === currentSubCats.length - 1 ? 'mr-8' : ''}`}
             >
-              <Text className={`font-medium ${filter === sub ? 'text-white' : 'text-gray-700'}`}>{sub}</Text>
+              <Text className={`font-medium ${filter === sub.value ? 'text-white' : 'text-gray-700'}`}>{sub.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>

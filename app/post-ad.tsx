@@ -2,7 +2,7 @@
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useDoc } from '../hooks/useDoc';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Listing } from '../types';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,13 +10,7 @@ import { ArrowLeft, Upload, X } from 'lucide-react-native';
 import { Picker } from '@react-native-picker/picker';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-
-const categories = [
-  { label: 'Jobs', value: 'jobs' },
-  { label: 'Services', value: 'services' },
-  { label: 'Buy / Sell', value: 'buy-sell' },
-  { label: 'Rentals', value: 'rentals' },
-];
+import { CATEGORIES } from '../constants/categories';
 
 export default function PostAdPage() {
   const { user } = useAuth();
@@ -27,12 +21,23 @@ export default function PostAdPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'jobs' as Listing['category'],
+    category: CATEGORIES[0].id,
+    subCategory: CATEGORIES[0].subcategories[0].value,
     location: '',
     price: '',
     rent: '',
     salary: '',
   });
+
+  // Update subcategory when category changes
+  const handleCategoryChange = (itemValue: string) => {
+    const selectedCat = CATEGORIES.find(c => c.id === itemValue);
+    setFormData(prev => ({
+      ...prev,
+      category: itemValue,
+      subCategory: selectedCat?.subcategories[0]?.value || '' // Reset to first subcat
+    }));
+  };
 
   const handleChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -45,7 +50,7 @@ export default function PostAdPage() {
       return;
     }
 
-    if (!formData.title || !formData.description || !formData.category || !formData.location) {
+    if (!formData.title || !formData.description || !formData.category || !formData.location || !formData.subCategory) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
@@ -57,33 +62,39 @@ export default function PostAdPage() {
         title: formData.title,
         description: formData.description,
         category: formData.category,
+        subCategory: formData.subCategory, // Add subcategory to listing
         location: formData.location,
         ownerId: user.uid,
         createdBy: user.uid,
         createdAt: new Date(),
-        isVerifiedPost: true, // Default to true for now
-        ownerName: profile?.name || user.displayName || 'Unknown User',
+        isVerifiedPost: true,
+        ownerName: profile?.name || user.displayName || user.phoneNumber || 'User',
         ownerImage: profile?.profileImage || undefined,
         images: [],
       };
 
-      if (formData.category === 'jobs' && formData.salary) newListing.salary = Number(formData.salary);
+      if (formData.category === 'jobs' || formData.category === 'hire') {
+        if (formData.salary) newListing.salary = Number(formData.salary);
+      }
       if (formData.category === 'rentals' && formData.rent) newListing.rent = Number(formData.rent);
       if ((formData.category === 'buy-sell' || formData.category === 'services') && formData.price) {
         newListing.price = Number(formData.price);
       }
+      // Business might have investment or setup cost, treat as price for now if needed
 
       await addDoc(collection(db, 'listings'), newListing);
 
       Alert.alert('Success', 'Your ad has been posted successfully!');
       router.push('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       Alert.alert('Error', 'Failed to post ad. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
+  const currentCategory = CATEGORIES.find(c => c.id === formData.category);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -105,6 +116,33 @@ export default function PostAdPage() {
           </View>
         </TouchableOpacity>
 
+        <Text className="font-semibold mb-2 text-gray-700">Category</Text>
+        <View className="border border-gray-300 rounded-xl mb-4 bg-gray-50 overflow-hidden">
+          <Picker
+            selectedValue={formData.category}
+            onValueChange={handleCategoryChange}
+          >
+            {CATEGORIES.map((cat) => (
+              <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
+            ))}
+          </Picker>
+        </View>
+
+        {/* Subcategory Picker */}
+        <Text className="font-semibold mb-2 text-gray-700">Sub Category</Text>
+        <View className="border border-gray-300 rounded-xl mb-4 bg-gray-50 overflow-hidden">
+          <Picker
+            selectedValue={formData.subCategory}
+            onValueChange={(itemValue) => handleChange('subCategory', itemValue)}
+            enabled={!!currentCategory}
+          >
+            {currentCategory?.subcategories.map((sub) => (
+              <Picker.Item key={sub.value} label={sub.label} value={sub.value} />
+            ))}
+          </Picker>
+        </View>
+
+
         <Text className="font-semibold mb-2 text-gray-700">Title</Text>
         <TextInput
           className="border border-gray-300 rounded-xl p-4 mb-4 text-base bg-gray-50"
@@ -113,19 +151,7 @@ export default function PostAdPage() {
           onChangeText={(text) => handleChange('title', text)}
         />
 
-        <Text className="font-semibold mb-2 text-gray-700">Category</Text>
-        <View className="border border-gray-300 rounded-xl mb-4 bg-gray-50 overflow-hidden">
-          <Picker
-            selectedValue={formData.category}
-            onValueChange={(itemValue) => handleChange('category', itemValue)}
-          >
-            {categories.map((cat) => (
-              <Picker.Item key={cat.value} label={cat.label} value={cat.value} />
-            ))}
-          </Picker>
-        </View>
-
-        {formData.category === 'jobs' && (
+        {(formData.category === 'jobs' || formData.category === 'hire') && (
           <>
             <Text className="font-semibold mb-2 text-gray-700">Salary (Monthly)</Text>
             <TextInput
