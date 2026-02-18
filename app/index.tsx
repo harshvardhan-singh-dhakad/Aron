@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Listing } from '../types';
 import { useState, useEffect, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, MapPin, Clock, Briefcase, ShoppingBag, Home, UserPlus, Wrench, Store } from 'lucide-react-native';
 import { useCollection } from '../hooks/useCollection';
 import { orderBy, limit } from 'firebase/firestore';
@@ -24,6 +25,13 @@ const { width } = Dimensions.get('window');
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, loading: authLoading, guestMode } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user && !guestMode) {
+      router.replace('/welcome');
+    }
+  }, [authLoading, user, guestMode]);
 
   // Fetch listings sorted by createdAt descending
   const queryConstraints = useMemo(() => [

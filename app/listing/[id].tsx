@@ -45,10 +45,11 @@ export default function ListingDetailPage() {
 
     const handleApply = async () => {
         if (!user) {
-            Alert.alert('Login Required', 'Please log in to contact the owner.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Login', onPress: () => router.push('/profile') }
-            ]);
+            // "Skip" login -> Guest Mode -> "Apply" -> Login -> Back
+            router.push({
+                pathname: '/login',
+                params: { redirect: `/listing/${id}` }
+            });
             return;
         }
 
