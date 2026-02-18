@@ -8,6 +8,8 @@ export interface Listing {
     rent?: number;
     salary?: number;
     location: string;
+    latitude?: number;
+    longitude?: number;
     createdAt: Date;
     images: string[];
     ownerId: string;

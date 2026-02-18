@@ -9,7 +9,17 @@ import { useCollection } from '../hooks/useCollection';
 import { orderBy, limit } from 'firebase/firestore';
 import Header from '../components/header';
 
+
 import { CATEGORIES as categories } from '../constants/categories'; // Alias to keep existing map logic
+import Carousel from 'react-native-reanimated-carousel';
+import { Dimensions } from 'react-native';
+import NearbyListingsMap from '../components/NearbyListingsMap';
+
+const { width } = Dimensions.get('window');
+
+
+
+
 
 
 export default function HomePage() {
@@ -74,7 +84,47 @@ export default function HomePage() {
       >
         {/* Header */}
         {/* Header */}
+        {/* Header */}
         <Header />
+
+        {/* Carousel Banner */}
+        <View className="mb-6 mt-2">
+          {listings.length > 0 ? (
+            <Carousel
+              loop
+              width={width - 32} // 32 = px-4 * 2
+              height={width / 2}
+              autoPlay={true}
+              data={listings.slice(0, 5)}
+              scrollAnimationDuration={1000}
+              renderItem={({ item }) => (
+                <Pressable
+                  className="bg-gray-200 rounded-2xl overflow-hidden ml-1 h-full shadow-sm relative"
+                  onPress={() => router.push(`/listing/${item.id}`)}
+                >
+                  <Image
+                    source={{ uri: item.images && item.images.length > 0 ? item.images[0] : 'https://placehold.co/600x400/png?text=No+Image' }}
+                    className="w-full h-full opacity-90"
+                    resizeMode="cover"
+                  />
+                  <View className="absolute bottom-0 w-full bg-black/60 p-3">
+                    <Text className="text-white font-bold text-lg" numberOfLines={1}>{item.title}</Text>
+                    <View className="flex-row justify-between mt-1 items-center">
+                      <View className="bg-blue-600 px-2 py-0.5 rounded">
+                        <Text className="text-white text-[10px] font-bold uppercase">{item.category}</Text>
+                      </View>
+                      <Text className="text-white font-bold text-base">{getPrice(item)}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              )}
+            />
+          ) : (
+            <View className="h-40 bg-gray-100 rounded-2xl items-center justify-center ml-1 border border-dashed border-gray-300">
+              <Text className="text-gray-400 font-medium">Loading Featured Ads...</Text>
+            </View>
+          )}
+        </View>
 
         {/* Search Bar */}
         <Pressable
@@ -107,6 +157,22 @@ export default function HomePage() {
             ))}
           </View>
         </View>
+
+        {/* Map View of Nearby Listings */}
+        <View className="mb-8">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-xl font-bold text-gray-800">Explore Nearby</Text>
+            <Text className="text-blue-600 text-sm font-medium">View Map</Text>
+          </View>
+          {listings.length > 0 ? (
+            <NearbyListingsMap listings={listings} />
+          ) : (
+            <View className="h-48 bg-gray-100 rounded-2xl items-center justify-center">
+              <Text className="text-gray-400">Map loading...</Text>
+            </View>
+          )}
+        </View>
+
 
         {/* Recent Listings */}
         <View className="mb-24">
