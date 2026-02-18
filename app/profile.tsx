@@ -168,7 +168,7 @@ export default function ProfilePage() {
             id="send-otp-button"
             onPress={handleSendOtp}
             disabled={isSending}
-            className={`bg-black p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all ${isSending ? 'opacity-70' : ''}`}
+            className={`bg-blue-600 p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all ${isSending ? 'opacity-70' : ''}`}
           >
             {isSending ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Send OTP</Text>}
           </TouchableOpacity>
@@ -193,7 +193,7 @@ export default function ProfilePage() {
           <TouchableOpacity
             onPress={handleVerifyOtp}
             disabled={isSending}
-            className={`bg-black p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all ${isSending ? 'opacity-70' : ''}`}
+            className={`bg-blue-600 p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all ${isSending ? 'opacity-70' : ''}`}
           >
             {isSending ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Verify & Login</Text>}
           </TouchableOpacity>

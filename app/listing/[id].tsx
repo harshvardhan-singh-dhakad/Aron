@@ -109,7 +109,7 @@ export default function ListingDetailPage() {
         return (
             <SafeAreaView className="flex-1 bg-white justify-center items-center">
                 <Text className="text-gray-500 text-lg">Listing not found</Text>
-                <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-black px-6 py-3 rounded-full">
+                <TouchableOpacity onPress={() => router.back()} className="mt-4 bg-blue-600 px-6 py-3 rounded-full">
                     <Text className="text-white font-bold">Go Back</Text>
                 </TouchableOpacity>
             </SafeAreaView>
@@ -223,7 +223,7 @@ export default function ListingDetailPage() {
                     <TouchableOpacity
                         onPress={handleApply}
                         disabled={hasApplied || applying}
-                        className={`w-full py-4 rounded-xl items-center shadow-md active:scale-[0.98] transition-all ${hasApplied ? 'bg-green-600' : 'bg-black'}`}
+                        className={`w-full py-4 rounded-xl items-center shadow-md active:scale-[0.98] transition-all ${hasApplied ? 'bg-green-600' : 'bg-blue-600'}`}
                     >
                         {applying ? (
                             <ActivityIndicator color="white" />

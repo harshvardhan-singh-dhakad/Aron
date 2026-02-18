@@ -175,12 +175,7 @@ export default function HomePage() {
       </ScrollView>
 
       {/* FAB to Post Ad */}
-      <Pressable
-        onPress={() => router.push('/post-ad')}
-        className="absolute bottom-6 right-6 w-16 h-16 bg-orange-500 rounded-full items-center justify-center shadow-2xl z-50 active:scale-95 transition-transform"
-      >
-        <Text className="text-white text-4xl pb-1 font-light">+</Text>
-      </Pressable>
+
     </SafeAreaView>
   );
 }

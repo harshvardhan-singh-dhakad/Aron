@@ -56,7 +56,7 @@ export default function CategoryListingsPage() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row px-4">
           <TouchableOpacity
             onPress={() => setFilter(null)}
-            className={`px-5 py-2 rounded-full border mr-2 ${filter === null ? 'bg-black border-black' : 'bg-white border-gray-300'}`}
+            className={`px-5 py-2 rounded-full border mr-2 ${filter === null ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}
           >
             <Text className={`font-medium ${filter === null ? 'text-white' : 'text-gray-700'}`}>All</Text>
           </TouchableOpacity>
@@ -64,7 +64,7 @@ export default function CategoryListingsPage() {
             <TouchableOpacity
               key={sub.value}
               onPress={() => setFilter(sub.value)}
-              className={`px-5 py-2 rounded-full border mr-2 ${filter === sub.value ? 'bg-black border-black' : 'bg-white border-gray-300'} ${index === currentSubCats.length - 1 ? 'mr-8' : ''}`}
+              className={`px-5 py-2 rounded-full border mr-2 ${filter === sub.value ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'} ${index === currentSubCats.length - 1 ? 'mr-8' : ''}`}
             >
               <Text className={`font-medium ${filter === sub.value ? 'text-white' : 'text-gray-700'}`}>{sub.label}</Text>
             </TouchableOpacity>

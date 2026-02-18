@@ -211,7 +211,7 @@ export default function PostAdPage() {
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={loading}
-          className={`bg-black p-4 rounded-xl items-center mb-8 shadow-lg ${loading ? 'opacity-70' : ''}`}
+          className={`bg-blue-600 p-4 rounded-xl items-center mb-8 shadow-lg ${loading ? 'opacity-70' : ''}`}
         >
           {loading ? (
             <ActivityIndicator color="white" />
