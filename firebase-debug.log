@@ -1,0 +1,296 @@
+[debug] [2026-02-19T12:39:23.917Z] ----------------------------------------------------------------------
+[debug] [2026-02-19T12:39:23.920Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\jsm\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2026-02-19T12:39:23.920Z] CLI Version:   15.5.1
+[debug] [2026-02-19T12:39:23.920Z] Platform:      win32
+[debug] [2026-02-19T12:39:23.920Z] Node Version:  v24.12.0
+[debug] [2026-02-19T12:39:23.920Z] Time:          Thu Feb 19 2026 18:09:23 GMT+0530 (India Standard Time)
+[debug] [2026-02-19T12:39:23.921Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-19T12:39:23.923Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-02-19T12:41:20.205Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-19T12:41:20.206Z] > authorizing via signed-in user (deepakdhakad5421@gmail.com)
+[debug] [2026-02-19T12:41:20.206Z] [iam] checking project aron-one for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-02-19T12:41:20.206Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:20.206Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:20.206Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions [none]
+[debug] [2026-02-19T12:41:20.207Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions  x-goog-user-project=aron-one
+[debug] [2026-02-19T12:41:20.207Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-02-19T12:41:20.877Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-02-19T12:41:20.877Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-02-19T12:41:21.686Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions 200
+[debug] [2026-02-19T12:41:21.686Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-02-19T12:41:21.687Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:21.687Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:21.687Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/aron-one [none]
+[debug] [2026-02-19T12:41:22.103Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/aron-one 200
+[debug] [2026-02-19T12:41:22.104Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/aron-one {"projectId":"aron-one","projectNumber":"618750765784","displayName":"aron-one","name":"projects/aron-one","resources":{"hostingSite":"aron-one"},"state":"ACTIVE","etag":"1_404e33ec-7aa6-4e84-8b26-ef5ad03f1808"}
+[info] 
+[info] === Deploying to 'aron-one'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-02-19T12:41:22.108Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:22.109Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:22.109Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions [none]
+[debug] [2026-02-19T12:41:22.109Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-02-19T12:41:25.413Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions 200
+[debug] [2026-02-19T12:41:25.413Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions {"name":"projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[aron-one]: beginning deploy... 
+[info] i  hosting[aron-one]: found 19 files in dist 
+[debug] [2026-02-19T12:41:25.430Z] [hosting] uploading with 200 concurrency
+[debug] [2026-02-19T12:41:25.623Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:25.623Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:25.624Z] [hosting] hash cache [ZGlzdA] stored for 19 files
+[debug] [2026-02-19T12:41:25.624Z] [hosting][hash queue][FINAL] {"max":171,"min":21,"avg":30.57894736842105,"active":0,"complete":19,"success":19,"errored":0,"retried":0,"total":19,"elapsed":175}
+[debug] [2026-02-19T12:41:25.625Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d:populateFiles [none]
+[debug] [2026-02-19T12:41:25.625Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d:populateFiles {"files":{"/_sitemap.html":"5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f","/search.html":"c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4","/withdraw.html":"3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3","/welcome.html":"8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0","/notifications.html":"347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887","/profile.html":"bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c","/modal.html":"647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf","/post-ad.html":"7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290","/login.html":"df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7","/inbox.html":"1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a","/index.html":"53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c","/+not-found.html":"5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f","/complete-profile.html":"f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925","/listings/[category].html":"7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7","/_expo/static/css/global-d8a56cc45c7b362f6426423961400978.css":"bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23","/listing/[id].html":"bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c","/assets/assets/images/splash-icon.97dae5a0e62ad8551d8a31897b425e63.png":"c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd","/assets/assets/images/icon.8c279facc9bf43f4eb1b72c32c22e65d.png":"5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61","/_expo/static/js/web/entry-2e09528e643c4bf8fe5572d43b18e065.js":"618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a"}}
+[debug] [2026-02-19T12:41:26.550Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d:populateFiles 200
+[debug] [2026-02-19T12:41:26.550Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d:populateFiles {"uploadRequiredHashes":["5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f","7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7","1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a","bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23","8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0","347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887","c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd","5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61","3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3","c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4","df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7","bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c","647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf","618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a","f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925","7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290","53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c"],"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files"}
+[debug] [2026-02-19T12:41:26.550Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.551Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.552Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:26.553Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f [none]
+[debug] [2026-02-19T12:41:26.553Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f [stream]
+[debug] [2026-02-19T12:41:26.554Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7 [none]
+[debug] [2026-02-19T12:41:26.554Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7 [stream]
+[debug] [2026-02-19T12:41:26.555Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a [none]
+[debug] [2026-02-19T12:41:26.555Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a [stream]
+[debug] [2026-02-19T12:41:26.556Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23 [none]
+[debug] [2026-02-19T12:41:26.556Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23 [stream]
+[debug] [2026-02-19T12:41:26.557Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0 [none]
+[debug] [2026-02-19T12:41:26.557Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0 [stream]
+[debug] [2026-02-19T12:41:26.558Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887 [none]
+[debug] [2026-02-19T12:41:26.558Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887 [stream]
+[debug] [2026-02-19T12:41:26.558Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd [none]
+[debug] [2026-02-19T12:41:26.558Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd [stream]
+[debug] [2026-02-19T12:41:26.559Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61 [none]
+[debug] [2026-02-19T12:41:26.559Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61 [stream]
+[debug] [2026-02-19T12:41:26.560Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3 [none]
+[debug] [2026-02-19T12:41:26.560Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3 [stream]
+[debug] [2026-02-19T12:41:26.560Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4 [none]
+[debug] [2026-02-19T12:41:26.560Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4 [stream]
+[debug] [2026-02-19T12:41:26.561Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7 [none]
+[debug] [2026-02-19T12:41:26.561Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7 [stream]
+[debug] [2026-02-19T12:41:26.562Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c [none]
+[debug] [2026-02-19T12:41:26.562Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c [stream]
+[debug] [2026-02-19T12:41:26.562Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf [none]
+[debug] [2026-02-19T12:41:26.562Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf [stream]
+[debug] [2026-02-19T12:41:26.563Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a [none]
+[debug] [2026-02-19T12:41:26.563Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a [stream]
+[debug] [2026-02-19T12:41:26.564Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925 [none]
+[debug] [2026-02-19T12:41:26.564Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925 [stream]
+[debug] [2026-02-19T12:41:26.565Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290 [none]
+[debug] [2026-02-19T12:41:26.565Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290 [stream]
+[debug] [2026-02-19T12:41:26.565Z] >>> [apiv2][query] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c [none]
+[debug] [2026-02-19T12:41:26.565Z] >>> [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c [stream]
+[debug] [2026-02-19T12:41:26.566Z] [hosting][populate queue][FINAL] {"max":930,"min":930,"avg":930,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":943}
+[debug] [2026-02-19T12:41:26.566Z] [hosting] uploads queued: 17
+[debug] [2026-02-19T12:41:27.734Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd 200
+[debug] [2026-02-19T12:41:27.734Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd [stream]
+[debug] [2026-02-19T12:41:27.795Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0 200
+[debug] [2026-02-19T12:41:27.795Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0 [stream]
+[debug] [2026-02-19T12:41:27.811Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290 200
+[debug] [2026-02-19T12:41:27.811Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290 [stream]
+[debug] [2026-02-19T12:41:27.944Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3 200
+[debug] [2026-02-19T12:41:27.944Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3 [stream]
+[debug] [2026-02-19T12:41:28.019Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7 200
+[debug] [2026-02-19T12:41:28.019Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7 [stream]
+[debug] [2026-02-19T12:41:28.043Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a 200
+[debug] [2026-02-19T12:41:28.043Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a [stream]
+[debug] [2026-02-19T12:41:28.048Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c 200
+[debug] [2026-02-19T12:41:28.048Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c [stream]
+[debug] [2026-02-19T12:41:28.048Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23 200
+[debug] [2026-02-19T12:41:28.048Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23 [stream]
+[debug] [2026-02-19T12:41:28.155Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f 200
+[debug] [2026-02-19T12:41:28.155Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f [stream]
+[debug] [2026-02-19T12:41:28.161Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7 200
+[debug] [2026-02-19T12:41:28.161Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7 [stream]
+[debug] [2026-02-19T12:41:28.180Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4 200
+[debug] [2026-02-19T12:41:28.180Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4 [stream]
+[debug] [2026-02-19T12:41:28.203Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf 200
+[debug] [2026-02-19T12:41:28.204Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf [stream]
+[debug] [2026-02-19T12:41:28.227Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887 200
+[debug] [2026-02-19T12:41:28.227Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887 [stream]
+[debug] [2026-02-19T12:41:28.278Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c 200
+[debug] [2026-02-19T12:41:28.278Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c [stream]
+[debug] [2026-02-19T12:41:28.288Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61 200
+[debug] [2026-02-19T12:41:28.288Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61 [stream]
+[debug] [2026-02-19T12:41:28.498Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a 200
+[debug] [2026-02-19T12:41:28.498Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a [stream]
+[debug] [2026-02-19T12:41:29.386Z] <<< [apiv2][status] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925 200
+[debug] [2026-02-19T12:41:29.387Z] <<< [apiv2][body] POST https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/4eae1b50bb95e73d/files/f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925 [stream]
+[debug] [2026-02-19T12:41:29.387Z] [hosting][upload queue][FINAL] {"max":2834,"min":1183,"avg":1614.2941176470588,"active":0,"complete":17,"success":17,"errored":0,"retried":0,"total":17,"elapsed":2837}
+[info] +  hosting[aron-one]: file upload complete 
+[debug] [2026-02-19T12:41:29.387Z] [hosting] deploy completed after 3971ms
+[debug] [2026-02-19T12:41:29.388Z] [
+  {
+    "config": {
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "aron-one"
+    },
+    "version": "projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d"
+  }
+]
+[info] i  hosting[aron-one]: finalizing version... 
+[debug] [2026-02-19T12:41:29.389Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:29.389Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:29.390Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/4eae1b50bb95e73d updateMask=status%2Cconfig
+[debug] [2026-02-19T12:41:29.390Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/4eae1b50bb95e73d {"status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]}}
+[debug] [2026-02-19T12:41:30.155Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/4eae1b50bb95e73d 200
+[debug] [2026-02-19T12:41:30.156Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/4eae1b50bb95e73d {"name":"projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-02-19T12:41:23.843668Z","createUser":{"email":"deepakdhakad5421@gmail.com"},"finalizeTime":"2026-02-19T12:41:29.942828Z","finalizeUser":{"email":"deepakdhakad5421@gmail.com"}}
+[debug] [2026-02-19T12:41:30.156Z] [hosting] finalized version for aron-one:[object Object]
+[info] +  hosting[aron-one]: version finalized 
+[info] i  hosting[aron-one]: releasing new version... 
+[debug] [2026-02-19T12:41:30.157Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:30.157Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:30.157Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases versionName=projects%2F618750765784%2Fsites%2Faron-one%2Fversions%2F4eae1b50bb95e73d
+[debug] [2026-02-19T12:41:30.157Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases {}
+[debug] [2026-02-19T12:41:30.980Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases 200
+[debug] [2026-02-19T12:41:30.981Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases {"name":"projects/618750765784/sites/aron-one/channels/live/releases/1771504890107000","version":{"name":"projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-02-19T12:41:23.843668Z","createUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"},"finalizeTime":"2026-02-19T12:41:29.942828Z","finalizeUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}},"type":"DEPLOY","releaseTime":"2026-02-19T12:41:30.107Z","releaseUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}}
+[debug] [2026-02-19T12:41:30.981Z] [hosting] release: {"name":"projects/618750765784/sites/aron-one/channels/live/releases/1771504890107000","version":{"name":"projects/618750765784/sites/aron-one/versions/4eae1b50bb95e73d","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-02-19T12:41:23.843668Z","createUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"},"finalizeTime":"2026-02-19T12:41:29.942828Z","finalizeUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}},"type":"DEPLOY","releaseTime":"2026-02-19T12:41:30.107Z","releaseUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}}
+[info] +  hosting[aron-one]: release complete 
+[info] 
+[info] +  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/aron-one/overview
+[info] Hosting URL: https://aron-one.web.app
+[debug] [2026-02-19T12:41:33.004Z] ----------------------------------------------------------------------
+[debug] [2026-02-19T12:41:33.007Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\jsm\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting --debug
+[debug] [2026-02-19T12:41:33.007Z] CLI Version:   15.5.1
+[debug] [2026-02-19T12:41:33.007Z] Platform:      win32
+[debug] [2026-02-19T12:41:33.007Z] Node Version:  v24.12.0
+[debug] [2026-02-19T12:41:33.007Z] Time:          Thu Feb 19 2026 18:11:33 GMT+0530 (India Standard Time)
+[debug] [2026-02-19T12:41:33.007Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-19T12:41:34.869Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-19T12:41:34.870Z] > authorizing via signed-in user (deepakdhakad5421@gmail.com)
+[debug] [2026-02-19T12:41:34.870Z] [iam] checking project aron-one for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-02-19T12:41:34.872Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:34.872Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:34.873Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions [none]
+[debug] [2026-02-19T12:41:34.873Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions  x-goog-user-project=aron-one
+[debug] [2026-02-19T12:41:34.873Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-02-19T12:41:36.188Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\jsm\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:308:49)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2026-02-19T12:41:36.372Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions 200
+[debug] [2026-02-19T12:41:36.375Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/aron-one:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-02-19T12:41:36.381Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:36.382Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:36.383Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/aron-one [none]
+[debug] [2026-02-19T12:41:36.831Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/aron-one 200
+[debug] [2026-02-19T12:41:36.832Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/aron-one {"projectId":"aron-one","projectNumber":"618750765784","displayName":"aron-one","name":"projects/aron-one","resources":{"hostingSite":"aron-one"},"state":"ACTIVE","etag":"1_404e33ec-7aa6-4e84-8b26-ef5ad03f1808"}
+[info] 
+[info] === Deploying to 'aron-one'...
+[info] 
+[info] i  deploying hosting 
+[debug] [2026-02-19T12:41:36.837Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:36.837Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:36.837Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions [none]
+[debug] [2026-02-19T12:41:36.837Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-02-19T12:41:39.345Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions 200
+[debug] [2026-02-19T12:41:39.346Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions {"name":"projects/618750765784/sites/aron-one/versions/7733c2754c41dc43","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[info] i  hosting[aron-one]: beginning deploy... 
+[info] i  hosting[aron-one]: found 19 files in dist 
+[debug] [2026-02-19T12:41:39.362Z] [hosting] uploading with 200 concurrency
+[debug] [2026-02-19T12:41:39.366Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:39.366Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:39.367Z] [hosting] hash cache [ZGlzdA] stored for 19 files
+[debug] [2026-02-19T12:41:39.368Z] [hosting][hash queue][FINAL] {"max":2,"min":0,"avg":0,"active":0,"complete":19,"success":19,"errored":0,"retried":0,"total":19,"elapsed":4}
+[debug] [2026-02-19T12:41:39.368Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/7733c2754c41dc43:populateFiles [none]
+[debug] [2026-02-19T12:41:39.368Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/7733c2754c41dc43:populateFiles {"files":{"/_sitemap.html":"5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f","/withdraw.html":"3bc005523ca9fc3768ce46acb79a7f547c2beef0f33c0bab8eefc6bfa7d580b3","/welcome.html":"8b66422a59f077b28be37f58debc4443d9abb5c8e0f1d001bbed4208abd314c0","/search.html":"c8e13a05ed8873fa2932c30a2296005137d856f45d3ebbdf7949adab82af74b4","/profile.html":"bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c","/post-ad.html":"7d59e4034232e3786c56e5eb250c0839a1a44e9b9bfb9991fc762006633a3290","/notifications.html":"347b652143165a3f09728c1f65533f9d03616a5380566abeff6c2b46bbab5887","/modal.html":"647d9c7b96c1f3b4ff649cdac0a9192885ac7595de271a24599eb60efe77fdcf","/login.html":"df436223613f081edfa1739b67454cc93fe8fa716f00dcdf685fdf1a5974cbb7","/index.html":"53ad487a17ee921f8603adda824325cf4f60693df86eedf23060f419d790894c","/inbox.html":"1a38382e484e7f3a4e0df28aa34595fefc28ec8b570f9e357c1265becae9e49a","/complete-profile.html":"f17781c9cd32dfddd60e71ddcf4dfd9f6db5b5c3fd812924ad3b105e31d8c925","/+not-found.html":"5920f4095fdab1f751ccb676ce4ac28434fc15b8ced014c2e6cdd94b2767470f","/_expo/static/js/web/entry-2e09528e643c4bf8fe5572d43b18e065.js":"618d28f30a99c2bd6585d2d42dd8649d2d56087120b72bb72a15c99755daa20a","/_expo/static/css/global-d8a56cc45c7b362f6426423961400978.css":"bf18d49177aac9b43e7727f36242c67f493bf49cd7df5f473a44dd34c6bdce23","/listings/[category].html":"7710d57c8ab10bea8c8b7556ed50687c43fac5c771a7117696eaa27656a0d2f7","/listing/[id].html":"bf36a1a3bab7e5328fc30630e0af1e471303319fd1271703bc28437c3576970c","/assets/assets/images/splash-icon.97dae5a0e62ad8551d8a31897b425e63.png":"c86b90e324f0371b0679bddd681226b7879a82b70880f986b13f815e8abdc4fd","/assets/assets/images/icon.8c279facc9bf43f4eb1b72c32c22e65d.png":"5776e6bd8a59b1e55240a92027a2106a1a62e0f23a1aa1b84549277ab800bc61"}}
+[debug] [2026-02-19T12:41:40.092Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/7733c2754c41dc43:populateFiles 200
+[debug] [2026-02-19T12:41:40.092Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/618750765784/sites/aron-one/versions/7733c2754c41dc43:populateFiles {"uploadUrl":"https://upload-firebasehosting.googleapis.com/upload/sites/aron-one/versions/7733c2754c41dc43/files"}
+[debug] [2026-02-19T12:41:40.093Z] [hosting][populate queue][FINAL] {"max":727,"min":727,"avg":727,"active":0,"complete":1,"success":1,"errored":0,"retried":0,"total":1,"elapsed":727}
+[debug] [2026-02-19T12:41:40.093Z] [hosting] uploads queued: 0
+[debug] [2026-02-19T12:41:40.093Z] [hosting][upload queue][FINAL] {"max":0,"min":9999999999,"avg":0,"active":0,"complete":0,"success":0,"errored":0,"retried":0,"total":0,"elapsed":1771504900093}
+[info] i  hosting: upload complete 
+[info] +  hosting[aron-one]: file upload complete 
+[debug] [2026-02-19T12:41:40.094Z] [hosting] deploy completed after 745ms
+[debug] [2026-02-19T12:41:40.094Z] [
+  {
+    "config": {
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "site": "aron-one"
+    },
+    "version": "projects/618750765784/sites/aron-one/versions/7733c2754c41dc43"
+  }
+]
+[info] i  hosting[aron-one]: finalizing version... 
+[debug] [2026-02-19T12:41:40.097Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:40.097Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:40.097Z] >>> [apiv2][query] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/7733c2754c41dc43 updateMask=status%2Cconfig
+[debug] [2026-02-19T12:41:40.098Z] >>> [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/7733c2754c41dc43 {"status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]}}
+[debug] [2026-02-19T12:41:40.923Z] <<< [apiv2][status] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/7733c2754c41dc43 200
+[debug] [2026-02-19T12:41:40.923Z] <<< [apiv2][body] PATCH https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/versions/7733c2754c41dc43 {"name":"projects/618750765784/sites/aron-one/versions/7733c2754c41dc43","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-02-19T12:41:38.505924Z","createUser":{"email":"deepakdhakad5421@gmail.com"},"finalizeTime":"2026-02-19T12:41:40.704609Z","finalizeUser":{"email":"deepakdhakad5421@gmail.com"}}
+[debug] [2026-02-19T12:41:40.924Z] [hosting] finalized version for aron-one:[object Object]
+[info] +  hosting[aron-one]: version finalized 
+[info] i  hosting[aron-one]: releasing new version... 
+[debug] [2026-02-19T12:41:40.924Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:40.924Z] Checked if tokens are valid: true, expires at: 1771507334877
+[debug] [2026-02-19T12:41:40.925Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases versionName=projects%2F618750765784%2Fsites%2Faron-one%2Fversions%2F7733c2754c41dc43
+[debug] [2026-02-19T12:41:40.925Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases {}
+[debug] [2026-02-19T12:41:41.801Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases 200
+[debug] [2026-02-19T12:41:41.801Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/aron-one/channels/live/releases {"name":"projects/618750765784/sites/aron-one/channels/live/releases/1771504900934000","version":{"name":"projects/618750765784/sites/aron-one/versions/7733c2754c41dc43","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-02-19T12:41:38.505924Z","createUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"},"finalizeTime":"2026-02-19T12:41:40.704609Z","finalizeUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}},"type":"DEPLOY","releaseTime":"2026-02-19T12:41:40.934Z","releaseUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}}
+[debug] [2026-02-19T12:41:41.802Z] [hosting] release: {"name":"projects/618750765784/sites/aron-one/channels/live/releases/1771504900934000","version":{"name":"projects/618750765784/sites/aron-one/versions/7733c2754c41dc43","status":"FINALIZED","config":{"rewrites":[{"glob":"**","path":"/index.html"}]},"labels":{"deployment-tool":"cli-firebase"},"createTime":"2026-02-19T12:41:38.505924Z","createUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"},"finalizeTime":"2026-02-19T12:41:40.704609Z","finalizeUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}},"type":"DEPLOY","releaseTime":"2026-02-19T12:41:40.934Z","releaseUser":{"email":"deepakdhakad5421@gmail.com","imageUrl":"https://lh3.googleusercontent.com/a/ACg8ocLtidvwIrYAMzzW4LESHqn4CAUpU68R2m5UH8cFlnX9jpY9y6Y3rw"}}
+[info] +  hosting[aron-one]: release complete 
+[info] 
+[info] +  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/aron-one/overview
+[info] Hosting URL: https://aron-one.web.app
