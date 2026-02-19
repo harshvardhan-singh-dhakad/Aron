@@ -1,5 +1,5 @@
 
-import { View, Text, ScrollView, Pressable, RefreshControl, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, Image, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Listing } from '../types';
 import { useState, useEffect, useMemo } from 'react';
@@ -167,19 +167,24 @@ export default function HomePage() {
         </View>
 
         {/* Map View of Nearby Listings */}
-        <View className="mb-8">
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-xl font-bold text-gray-800">Explore Nearby</Text>
-            <Text className="text-blue-600 text-sm font-medium">View Map</Text>
-          </View>
-          {listings.length > 0 ? (
-            <NearbyListingsMap listings={listings} />
-          ) : (
-            <View className="h-48 bg-gray-100 rounded-2xl items-center justify-center">
-              <Text className="text-gray-400">Map loading...</Text>
+        {Platform.OS !== 'web' ? (
+          <View className="mb-8">
+            <View className="flex-row justify-between items-center mb-2">
+              <Text className="text-xl font-bold text-gray-800">Explore Nearby</Text>
+              <Text className="text-blue-600 text-sm font-medium">View Map</Text>
             </View>
-          )}
-        </View>
+            {listings.length > 0 ? (
+              <NearbyListingsMap listings={listings} />
+            ) : (
+              <View className="h-48 bg-gray-100 rounded-2xl items-center justify-center">
+                <Text className="text-gray-400">Map loading...</Text>
+              </View>
+            )}
+          </View>
+        ) : (
+          /* On web, render the component invisible to trigger location logic */
+          listings.length > 0 && <NearbyListingsMap listings={listings} />
+        )}
 
 
         {/* Recent Listings */}
