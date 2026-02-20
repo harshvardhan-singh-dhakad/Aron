@@ -33,7 +33,7 @@ export function ProfileHero({ user, isPartner, onEdit, onPhotoUpload }: ProfileH
                     onPress={onPhotoUpload}
                     className={`absolute -top-0.5 -right-0.5 w-[26px] h-[26px] rounded-full border-2 border-white items-center justify-center ${camBtnBg}`}
                 >
-                    <Ionicons name="camera" size={14} color="#fff" />
+                    <Text className="text-[10px]">📷</Text>
                 </TouchableOpacity>
             </View>
 
@@ -50,12 +50,13 @@ export function ProfileHero({ user, isPartner, onEdit, onPhotoUpload }: ProfileH
             {/* Stars */}
             <View className="flex-row items-center gap-1">
                 {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons
+                    <Text
                         key={s}
-                        name="star"
-                        size={14}
-                        color={(user.rating || 0) >= s ? "#f59e0b" : "#d1d5db"}
-                    />
+                        className="text-sm"
+                        style={{ color: (user.rating || 0) >= s ? "#f59e0b" : "#d1d5db" }}
+                    >
+                        {(user.rating || 0) >= s ? '★' : '☆'}
+                    </Text>
                 ))}
                 <Text className={`text-xs font-semibold ml-1.5 ${subColor}`}>
                     {user.rating} ({user.reviews})
