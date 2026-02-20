@@ -1,8 +1,10 @@
 
-import { View, ScrollView, Image, TouchableOpacity, Text } from 'react-native';
-import { useState, useRef } from 'react';
+import { View, ScrollView, Image, TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfileHero } from '../components/profile/ProfileHero';
 import { StatsRow } from '../components/profile/StatsRow';
@@ -15,51 +17,236 @@ import { PartnerDashboard } from '../components/profile/PartnerDashboard';
 import { LeadsList } from '../components/profile/LeadsList';
 import { ListingsList } from '../components/profile/ListingsList';
 
-// Mock Data (In a real app, this would come from an API/Context)
-const MOCK_USER = {
-  name: "Rahul Sharma",
-  phone: "+91 98765 43210",
-  city: "Indore, MP",
-  email: "rahul@email.com",
-  profession: "Electrician",
-  photo: "https://api.dicebear.com/7.x/thumbs/svg?seed=rahul&backgroundColor=b6e3f4",
-  rating: 4.2,
-  reviews: 38,
+// Default Guest User
+const GUEST_USER = {
+  name: "Guest User",
+  phone: "",
+  city: "",
+  email: "",
+  profession: "",
+  photo: "https://api.dicebear.com/7.x/thumbs/svg?seed=guest&backgroundColor=e5e7eb",
+  rating: 0,
+  reviews: 0,
 };
 
-const USER_STATS = { bookings: 24, saved: 12, reviews: 38 };
-const PARTNER_STATS = { views: 1284, calls: 87, leads: 34, revenue: 12400 };
-
-const MOCK_BOOKINGS = [
-  { id: 1, service: "AC Repair", provider: "Suresh Kumar", date: "12 Jan 2025", amount: 800, status: "completed", myRating: 4 },
-  { id: 2, service: "Plumber", provider: "Ramesh Plumbing", date: "8 Jan 2025", amount: 500, status: "completed", myRating: 0 },
-  { id: 3, service: "Room Rental", provider: "Vijay Nagar Society", date: "1 Jan 2025", amount: 8000, status: "active", myRating: 0 },
-  { id: 4, service: "Movers", provider: "City Packers", date: "28 Dec 2024", amount: 3500, status: "cancelled", myRating: 0 },
-];
-
-const MOCK_TRANSACTIONS = [
-  { id: 1, title: "Wallet Top-up", date: "12 Jan", amount: 500, type: "cr", icon: "💳" },
-  { id: 2, title: "AC Repair Payment", date: "12 Jan", amount: -800, type: "dr", icon: "🔧" },
-  { id: 3, title: "Refund — Cancelled", date: "29 Dec", amount: 350, type: "cr", icon: "↩️" },
-];
-
-const MOCK_LEADS = [
-  { id: 1, name: "Priya Joshi", time: "2 min ago", msg: "Mujhe aaj electrician chahiye ghar pe, AC wiring ka kaam hai.", avatar: "https://api.dicebear.com/7.x/thumbs/svg?seed=priya&backgroundColor=ffdfbf" },
-  { id: 2, name: "Amit Verma", time: "1 hr ago", msg: "Mere shop mein 5 extra points lagate ho kya? Rate batao.", avatar: "https://api.dicebear.com/7.x/thumbs/svg?seed=amit&backgroundColor=c0aede" },
-];
-
-const MOCK_LISTINGS = [
-  { title: "Electrician Service — Indore", views: 284, calls: 18, status: "active", boost: true },
-  { title: "AC Wiring — ₹500 onwards", views: 156, calls: 9, status: "active", boost: false },
-];
-
 export default function ProfilePage() {
-  const { user: authUser, logout } = useAuth(); // Using real auth context for logout
+  const { user: authUser, logout } = useAuth();
   const router = useRouter();
 
   // State
   const [isPartner, setIsPartner] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
+  const [userData, setUserData] = useState<any>(GUEST_USER);
+  const [loading, setLoading] = useState(true);
+
+  // Real data states
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletData, setWalletData] = useState({ balance: 0, pending: 0 });
+  const [leads, setLeads] = useState<any[]>([]);
+  const [listings, setListings] = useState<any[]>([]);
+  const [userStats, setUserStats] = useState({ bookings: 0, saved: 0, reviews: 0 });
+  const [partnerStats, setPartnerStats] = useState({ views: 0, calls: 0, leads: 0, revenue: 0 });
+
+  // ────────────────────────────────────────
+  // 1. USER PROFILE — Real-time listener
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) {
+      setUserData(GUEST_USER);
+      setLoading(false);
+      return;
+    }
+
+    const unsub = onSnapshot(doc(db, 'users', authUser.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserData({
+          ...GUEST_USER,
+          ...data,
+          photo: data.profileImage || GUEST_USER.photo,
+          phone: data.phone || authUser.phoneNumber || "",
+          rating: data.rating || 0,
+          reviews: data.reviewCount || 0,
+        });
+      }
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [authUser]);
+
+  // ────────────────────────────────────────
+  // 2. BOOKINGS — Real-time listener
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) { setBookings([]); return; }
+
+    const q = query(
+      collection(db, 'bookings'),
+      where('userId', '==', authUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const items: any[] = [];
+      snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+      setBookings(items);
+      setUserStats(prev => ({ ...prev, bookings: items.length }));
+    }, (err) => console.log('Bookings listener error:', err));
+
+    return () => unsub();
+  }, [authUser]);
+
+  // ────────────────────────────────────────
+  // 3. WALLET & TRANSACTIONS — Real-time
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) { setTransactions([]); setWalletData({ balance: 0, pending: 0 }); return; }
+
+    // Wallet balance from user doc (already fetched) or dedicated wallet doc
+    const walletUnsub = onSnapshot(doc(db, 'wallets', authUser.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setWalletData({
+          balance: data.balance || 0,
+          pending: data.pending || 0,
+        });
+      }
+    }, (err) => console.log('Wallet listener error:', err));
+
+    // Transactions
+    const txQuery = query(
+      collection(db, 'wallets', authUser.uid, 'transactions'),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const txUnsub = onSnapshot(txQuery, (snap) => {
+      const items: any[] = [];
+      snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+      setTransactions(items);
+    }, (err) => console.log('Transactions listener error:', err));
+
+    return () => { walletUnsub(); txUnsub(); };
+  }, [authUser]);
+
+  // ────────────────────────────────────────
+  // 4. LEADS — Real-time (Partner Mode)
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) { setLeads([]); return; }
+
+    const q = query(
+      collection(db, 'leads'),
+      where('partnerId', '==', authUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const items: any[] = [];
+      snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+      setLeads(items);
+      setPartnerStats(prev => ({ ...prev, leads: items.length }));
+    }, (err) => console.log('Leads listener error:', err));
+
+    return () => unsub();
+  }, [authUser]);
+
+  // ────────────────────────────────────────
+  // 5. LISTINGS — Real-time (Partner Mode)
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) { setListings([]); return; }
+
+    const q = query(
+      collection(db, 'listings'),
+      where('ownerId', '==', authUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const items: any[] = [];
+      let totalViews = 0;
+      let totalCalls = 0;
+      let totalRevenue = 0;
+      snap.forEach((doc) => {
+        const data = doc.data();
+        items.push({ id: doc.id, ...data });
+        totalViews += data.views || 0;
+        totalCalls += data.calls || 0;
+        totalRevenue += data.revenue || 0;
+      });
+      setListings(items);
+      setPartnerStats(prev => ({
+        ...prev,
+        views: totalViews,
+        calls: totalCalls,
+        revenue: totalRevenue,
+      }));
+    }, (err) => console.log('Listings listener error:', err));
+
+    return () => unsub();
+  }, [authUser]);
+
+  // ────────────────────────────────────────
+  // 6. USER STATS — Saved count
+  // ────────────────────────────────────────
+  useEffect(() => {
+    if (!authUser) { setUserStats({ bookings: 0, saved: 0, reviews: 0 }); return; }
+
+    const unsub = onSnapshot(
+      collection(db, 'users', authUser.uid, 'saved'),
+      (snap) => {
+        setUserStats(prev => ({ ...prev, saved: snap.size }));
+      },
+      (err) => console.log('Saved listener error:', err)
+    );
+
+    return () => unsub();
+  }, [authUser]);
+
+  // ────────────────────────────────────────
+  // Handlers
+  // ────────────────────────────────────────
+  const handleEditProfile = () => {
+    if (!authUser) {
+      router.push('/login');
+      return;
+    }
+    router.push('/complete-profile');
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete", style: "destructive", onPress: async () => {
+            alert("Account deletion request received.");
+            logout();
+          }
+        }
+      ]
+    );
+  };
+
+  const handleTabChange = (tab: string) => {
+    if (tab === 'settings') {
+      router.push('/settings' as any);
+      return;
+    }
+    if (tab === 'help') {
+      router.push('/help' as any);
+      return;
+    }
+    setActiveTab(tab);
+  };
 
   // Tabs Config
   const USER_TABS = ['info', 'activity', 'wallet', 'settings', 'help'];
@@ -78,22 +265,43 @@ export default function ProfilePage() {
 
   const currentTabs = isPartner ? PARTNER_TABS : USER_TABS;
 
+  // ────────────────────────────────────────
   // Render Content based on active tab
+  // ────────────────────────────────────────
   const renderContent = () => {
+    if (!authUser && activeTab !== 'info') {
+      return (
+        <View className="p-10 items-center">
+          <Text className="text-gray-400 text-center mb-4">Please login to access this section</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/login')}
+            className="bg-u-navy px-6 py-2.5 rounded-full"
+          >
+            <Text className="text-white text-sm font-semibold">Login</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     switch (activeTab) {
       case 'info':
-        return <InfoSection user={MOCK_USER} onEdit={() => { }} onLogout={logout} onDelete={() => { }} />;
+        return <InfoSection user={userData} onEdit={handleEditProfile} onLogout={logout} onDelete={handleDeleteAccount} />;
       case 'activity':
-        return <BookingsList bookings={MOCK_BOOKINGS} isPartner={isPartner} />;
+        return bookings.length > 0
+          ? <BookingsList bookings={bookings} isPartner={isPartner} />
+          : <EmptyState message="No bookings yet" icon="📋" />;
       case 'wallet':
-        return <WalletSection wallet={{ balance: 1250, pending: 300 }} transactions={MOCK_TRANSACTIONS} />;
+        return <WalletSection wallet={walletData} transactions={transactions} />;
       case 'dashboard':
-        return <PartnerDashboard stats={PARTNER_STATS} leads={MOCK_LEADS} listings={MOCK_LISTINGS} onAction={() => { }} />;
+        return <PartnerDashboard stats={partnerStats} leads={leads} listings={listings} onAction={() => { }} />;
       case 'leads':
-        return <LeadsList leads={MOCK_LEADS} />;
+        return leads.length > 0
+          ? <LeadsList leads={leads} />
+          : <EmptyState message="No leads yet" icon="🔔" />;
       case 'listings':
-        return <ListingsList listings={MOCK_LISTINGS} />;
-      // For now, other tabs can just show a placeholder or reuse existing components
+        return listings.length > 0
+          ? <ListingsList listings={listings} />
+          : <EmptyState message="No listings yet. Create your first listing!" icon="📌" />;
       case 'settings':
       case 'help':
         return (
@@ -105,6 +313,15 @@ export default function ProfilePage() {
         return null;
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-u-bg items-center justify-center" edges={['top']}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text className="text-gray-400 mt-3">Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className={`flex-1 ${isPartner ? 'bg-p-bg' : 'bg-u-bg'}`} edges={['top']}>
@@ -126,21 +343,22 @@ export default function ProfilePage() {
           <TouchableOpacity
             className={`px-3.5 py-1.5 rounded-full ${isPartner ? 'bg-p-amber-soft' : 'bg-u-navy'
               }`}
+            onPress={handleEditProfile}
           >
             <Text className={`text-xs font-semibold ${isPartner ? 'text-p-amber' : 'text-white'
-              }`}>Edit</Text>
+              }`}>{authUser ? 'Edit' : 'Login'}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
           <ProfileHero
-            user={MOCK_USER}
+            user={userData}
             isPartner={isPartner}
-            onEdit={() => { }}
-            onPhotoUpload={() => { }}
+            onEdit={handleEditProfile}
+            onPhotoUpload={handleEditProfile}
           />
 
-          <StatsRow isPartner={isPartner} stats={isPartner ? PARTNER_STATS : USER_STATS} />
+          <StatsRow isPartner={isPartner} stats={isPartner ? partnerStats : userStats} />
 
           <ModeSwitch isPartner={isPartner} onSwitch={(val) => {
             setIsPartner(val);
@@ -150,15 +368,27 @@ export default function ProfilePage() {
           <SectionTabs
             tabs={currentTabs}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             isPartner={isPartner}
             tabLabels={TAB_LABELS}
-            hasLeads={MOCK_LEADS.length > 0}
+            hasLeads={leads.length > 0}
           />
 
           {renderContent()}
         </ScrollView>
       </View>
     </SafeAreaView>
+  );
+}
+
+// ────────────────────────────────────────
+// Empty State Component
+// ────────────────────────────────────────
+function EmptyState({ message, icon }: { message: string; icon: string }) {
+  return (
+    <View className="p-10 items-center">
+      <Text className="text-4xl mb-3">{icon}</Text>
+      <Text className="text-gray-400 text-center">{message}</Text>
+    </View>
   );
 }

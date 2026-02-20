@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +24,32 @@ export default function CompleteProfilePage() {
 
     const [locating, setLocating] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user?.uid) {
+            fetchUserData();
+        }
+    }, [user]);
+
+    const fetchUserData = async () => {
+        try {
+            const docRef = doc(db, 'users', user!.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setFullName(data.name || '');
+                setImage(data.profileImage || null);
+                setCity(data.city || '');
+                setState(data.state || '');
+                setPincode(data.pincode || ''); // Assuming pincode is saved
+            }
+        } catch (error) {
+            console.log("Error fetching user data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -159,81 +185,87 @@ export default function CompleteProfilePage() {
 
     return (
         <SafeAreaView className="flex-1 bg-white p-6">
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <Text className="text-3xl font-bold text-black mb-2">Setup Profile</Text>
-                <Text className="text-gray-500 mb-8">Let's get to know you better.</Text>
-
-                {/* Profile Photo */}
-                <View className="items-center mb-8">
-                    <TouchableOpacity onPress={pickImage} className="relative">
-                        <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center border border-gray-200 overflow-hidden">
-                            {image ? (
-                                <Image source={{ uri: image }} className="w-full h-full" />
-                            ) : (
-                                <Ionicons name="camera" size={32} color="#9ca3af" />
-                            )}
-                        </View>
-                        <View className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 border-2 border-white">
-                            <Ionicons name="pencil" size={12} color="white" />
-                        </View>
-                    </TouchableOpacity>
-                    <Text className="text-blue-600 font-medium mt-2">Upload Photo</Text>
+            {loading ? (
+                <View className="flex-1 items-center justify-center">
+                    <ActivityIndicator size="large" color="#2563eb" />
                 </View>
+            ) : (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    <Text className="text-3xl font-bold text-black mb-2">Setup Profile</Text>
+                    <Text className="text-gray-500 mb-8">Let's get to know you better.</Text>
 
-                {/* Fields */}
-                <Text className="font-bold mb-2 ml-1 text-gray-700">Full Name</Text>
-                <TextInput
-                    className="border border-gray-300 rounded-xl p-4 mb-6 bg-gray-50 text-base"
-                    placeholder="Enter full name"
-                    value={fullName}
-                    onChangeText={setFullName}
-                />
+                    {/* Profile Photo */}
+                    <View className="items-center mb-8">
+                        <TouchableOpacity onPress={pickImage} className="relative">
+                            <View className="w-24 h-24 rounded-full bg-gray-100 items-center justify-center border border-gray-200 overflow-hidden">
+                                {image ? (
+                                    <Image source={{ uri: image }} className="w-full h-full" />
+                                ) : (
+                                    <Ionicons name="camera" size={32} color="#9ca3af" />
+                                )}
+                            </View>
+                            <View className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2 border-2 border-white">
+                                <Ionicons name="pencil" size={12} color="white" />
+                            </View>
+                        </TouchableOpacity>
+                        <Text className="text-blue-600 font-medium mt-2">Upload Photo</Text>
+                    </View>
 
-                <Text className="font-bold mb-2 ml-1 text-gray-700">Location</Text>
-                <View className="flex-row items-center mb-6">
-                    <View className="flex-1">
-                        <TextInput
-                            className="border border-gray-300 rounded-xl p-4 bg-gray-50 text-base mb-3"
-                            placeholder="City"
-                            value={city}
-                            onChangeText={setCity}
-                        />
-                        <View className="flex-row gap-3">
+                    {/* Fields */}
+                    <Text className="font-bold mb-2 ml-1 text-gray-700">Full Name</Text>
+                    <TextInput
+                        className="border border-gray-300 rounded-xl p-4 mb-6 bg-gray-50 text-base"
+                        placeholder="Enter full name"
+                        value={fullName}
+                        onChangeText={setFullName}
+                    />
+
+                    <Text className="font-bold mb-2 ml-1 text-gray-700">Location</Text>
+                    <View className="flex-row items-center mb-6">
+                        <View className="flex-1">
                             <TextInput
-                                className="flex-1 border border-gray-300 rounded-xl p-4 bg-gray-50 text-base"
-                                placeholder="State"
-                                value={state}
-                                editable={false} // Auto-filled typically
+                                className="border border-gray-300 rounded-xl p-4 bg-gray-50 text-base mb-3"
+                                placeholder="City"
+                                value={city}
+                                onChangeText={setCity}
                             />
-                            <TextInput
-                                className="flex-1 border border-gray-300 rounded-xl p-4 bg-gray-50 text-base"
-                                placeholder="Pincode"
-                                value={pincode}
-                                onChangeText={setPincode}
-                                keyboardType="number-pad"
-                            />
+                            <View className="flex-row gap-3">
+                                <TextInput
+                                    className="flex-1 border border-gray-300 rounded-xl p-4 bg-gray-50 text-base"
+                                    placeholder="State"
+                                    value={state}
+                                    editable={false} // Auto-filled typically
+                                />
+                                <TextInput
+                                    className="flex-1 border border-gray-300 rounded-xl p-4 bg-gray-50 text-base"
+                                    placeholder="Pincode"
+                                    value={pincode}
+                                    onChangeText={setPincode}
+                                    keyboardType="number-pad"
+                                />
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                <TouchableOpacity
-                    onPress={detectLocation}
-                    disabled={locating}
-                    className="flex-row items-center justify-center border border-blue-600 rounded-xl p-3 mb-8 bg-blue-50"
-                >
-                    {locating ? <ActivityIndicator size="small" color="#2563EB" /> : <Ionicons name="location" size={20} color="#2563EB" />}
-                    <Text className="text-blue-600 font-bold ml-2">Detect Current Location</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={detectLocation}
+                        disabled={locating}
+                        className="flex-row items-center justify-center border border-blue-600 rounded-xl p-3 mb-8 bg-blue-50"
+                    >
+                        {locating ? <ActivityIndicator size="small" color="#2563EB" /> : <Ionicons name="location" size={20} color="#2563EB" />}
+                        <Text className="text-blue-600 font-bold ml-2">Detect Current Location</Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={handleSave}
-                    disabled={saving}
-                    className={`bg-blue-600 p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all mb-10 ${saving ? 'opacity-70' : ''}`}
-                >
-                    {saving ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Save & Continue</Text>}
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={handleSave}
+                        disabled={saving}
+                        className={`bg-blue-600 p-4 rounded-xl items-center shadow-lg active:scale-[0.98] transition-all mb-10 ${saving ? 'opacity-70' : ''}`}
+                    >
+                        {saving ? <ActivityIndicator color="white" /> : <Text className="text-white font-bold text-lg">Save & Continue</Text>}
+                    </TouchableOpacity>
 
-            </ScrollView>
+                </ScrollView>
+            )}
         </SafeAreaView>
     );
 }

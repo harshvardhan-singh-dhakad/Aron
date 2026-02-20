@@ -1,6 +1,7 @@
 
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 
 interface WalletSectionProps {
     wallet: any;
@@ -8,6 +9,7 @@ interface WalletSectionProps {
 }
 
 export function WalletSection({ wallet, transactions }: WalletSectionProps) {
+    const router = useRouter();
     return (
         <ScrollView className="px-5 py-3" showsVerticalScrollIndicator={false}>
             {/* Wallet Hero */}
@@ -31,10 +33,16 @@ export function WalletSection({ wallet, transactions }: WalletSectionProps) {
                 </Text>
 
                 <View className="flex-row gap-3 mt-5">
-                    <TouchableOpacity className="flex-1 bg-white/15 p-3 rounded-xl items-center backdrop-blur-sm">
+                    <TouchableOpacity
+                        onPress={() => router.push('/add-money' as any)}
+                        className="flex-1 bg-white/15 p-3 rounded-xl items-center backdrop-blur-sm"
+                    >
                         <Text className="text-[13px] font-semibold text-white">➕ Add Money</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity className="flex-1 bg-white/15 p-3 rounded-xl items-center backdrop-blur-sm">
+                    <TouchableOpacity
+                        onPress={() => router.push('/withdraw' as any)}
+                        className="flex-1 bg-white/15 p-3 rounded-xl items-center backdrop-blur-sm"
+                    >
                         <Text className="text-[13px] font-semibold text-white">📤 Withdraw</Text>
                     </TouchableOpacity>
                 </View>
