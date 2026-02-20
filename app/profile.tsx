@@ -1,10 +1,12 @@
 
-import { View, ScrollView, Image, TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
-import { useEffect, useState, useMemo } from 'react';
+import { View, ScrollView, Image, TouchableOpacity, Text, Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { doc, onSnapshot, collection, query, where, updateDoc, Timestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfileHero } from '../components/profile/ProfileHero';
 import { StatsRow } from '../components/profile/StatsRow';
@@ -48,6 +50,26 @@ export default function ProfilePage() {
   const [userStats, setUserStats] = useState({ bookings: 0, saved: 0, reviews: 0 });
   const [partnerStats, setPartnerStats] = useState({ views: 0, calls: 0, leads: 0, revenue: 0 });
 
+  // Inline edit modal state
+  const [editModal, setEditModal] = useState(false);
+  const [editField, setEditField] = useState('');
+  const [editLabel, setEditLabel] = useState('');
+  const [editValue, setEditValue] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Document verification modal state
+  const [docModal, setDocModal] = useState(false);
+  const [docType, setDocType] = useState('');
+  const [docImage, setDocImage] = useState<string | null>(null);
+  const [docSaving, setDocSaving] = useState(false);
+
+  const DOC_TYPES = [
+    { key: 'aadhaar', label: 'Aadhaar Card' },
+    { key: 'pan', label: 'PAN Card' },
+    { key: 'voter_id', label: 'Voter ID' },
+    { key: 'driving_license', label: 'Driving License' },
+  ];
+
   // ────────────────────────────────────────
   // 1. USER PROFILE — Real-time listener
   // ────────────────────────────────────────
@@ -64,11 +86,16 @@ export default function ProfilePage() {
         setUserData({
           ...GUEST_USER,
           ...data,
+          name: data.name || GUEST_USER.name,
           photo: data.profileImage || GUEST_USER.photo,
-          phone: data.phone || authUser.phoneNumber || "",
+          phone: data.phoneNumber || data.phone || authUser.phoneNumber || "",
+          city: data.city || data.location || "",
+          email: data.email || "",
+          profession: data.profession || "",
           rating: data.rating || 0,
           reviews: data.reviewCount || 0,
         });
+        setUserStats(prev => ({ ...prev, reviews: data.reviewCount || 0 }));
       }
       setLoading(false);
     });
@@ -84,15 +111,14 @@ export default function ProfilePage() {
 
     const q = query(
       collection(db, 'bookings'),
-      where('userId', '==', authUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      where('userId', '==', authUser.uid)
     );
 
     const unsub = onSnapshot(q, (snap) => {
       const items: any[] = [];
-      snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
-      setBookings(items);
+      snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+      items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setBookings(items.slice(0, 20));
       setUserStats(prev => ({ ...prev, bookings: items.length }));
     }, (err) => console.log('Bookings listener error:', err));
 
@@ -105,29 +131,23 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!authUser) { setTransactions([]); setWalletData({ balance: 0, pending: 0 }); return; }
 
-    // Wallet balance from user doc (already fetched) or dedicated wallet doc
     const walletUnsub = onSnapshot(doc(db, 'wallets', authUser.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setWalletData({
-          balance: data.balance || 0,
-          pending: data.pending || 0,
-        });
+        setWalletData({ balance: data.balance || 0, pending: data.pending || 0 });
       }
     }, (err) => console.log('Wallet listener error:', err));
 
-    // Transactions
-    const txQuery = query(
+    const txUnsub = onSnapshot(
       collection(db, 'wallets', authUser.uid, 'transactions'),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      (snap) => {
+        const items: any[] = [];
+        snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+        items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setTransactions(items.slice(0, 20));
+      },
+      (err) => console.log('Transactions listener error:', err)
     );
-
-    const txUnsub = onSnapshot(txQuery, (snap) => {
-      const items: any[] = [];
-      snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
-      setTransactions(items);
-    }, (err) => console.log('Transactions listener error:', err));
 
     return () => { walletUnsub(); txUnsub(); };
   }, [authUser]);
@@ -140,15 +160,14 @@ export default function ProfilePage() {
 
     const q = query(
       collection(db, 'leads'),
-      where('partnerId', '==', authUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      where('partnerId', '==', authUser.uid)
     );
 
     const unsub = onSnapshot(q, (snap) => {
       const items: any[] = [];
-      snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
-      setLeads(items);
+      snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+      items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setLeads(items.slice(0, 20));
       setPartnerStats(prev => ({ ...prev, leads: items.length }));
     }, (err) => console.log('Leads listener error:', err));
 
@@ -163,30 +182,22 @@ export default function ProfilePage() {
 
     const q = query(
       collection(db, 'listings'),
-      where('ownerId', '==', authUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      where('ownerId', '==', authUser.uid)
     );
 
     const unsub = onSnapshot(q, (snap) => {
       const items: any[] = [];
-      let totalViews = 0;
-      let totalCalls = 0;
-      let totalRevenue = 0;
-      snap.forEach((doc) => {
-        const data = doc.data();
-        items.push({ id: doc.id, ...data });
+      let totalViews = 0, totalCalls = 0, totalRevenue = 0;
+      snap.forEach((d) => {
+        const data = d.data();
+        items.push({ id: d.id, ...data });
         totalViews += data.views || 0;
         totalCalls += data.calls || 0;
         totalRevenue += data.revenue || 0;
       });
-      setListings(items);
-      setPartnerStats(prev => ({
-        ...prev,
-        views: totalViews,
-        calls: totalCalls,
-        revenue: totalRevenue,
-      }));
+      items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setListings(items.slice(0, 20));
+      setPartnerStats(prev => ({ ...prev, views: totalViews, calls: totalCalls, revenue: totalRevenue }));
     }, (err) => console.log('Listings listener error:', err));
 
     return () => unsub();
@@ -200,9 +211,7 @@ export default function ProfilePage() {
 
     const unsub = onSnapshot(
       collection(db, 'users', authUser.uid, 'saved'),
-      (snap) => {
-        setUserStats(prev => ({ ...prev, saved: snap.size }));
-      },
+      (snap) => { setUserStats(prev => ({ ...prev, saved: snap.size })); },
       (err) => console.log('Saved listener error:', err)
     );
 
@@ -213,11 +222,98 @@ export default function ProfilePage() {
   // Handlers
   // ────────────────────────────────────────
   const handleEditProfile = () => {
-    if (!authUser) {
-      router.push('/login');
+    if (!authUser) { router.push('/login'); return; }
+    router.push('/complete-profile?redirect=/profile');
+  };
+
+  // Open inline edit modal for a specific field
+  const handleFieldEdit = (field: string, currentValue: string) => {
+    if (!authUser) { router.push('/login'); return; }
+    const labels: Record<string, string> = {
+      name: 'Full Name',
+      email: 'Email',
+      city: 'City / Location',
+      profession: 'Skill / Profession',
+    };
+    setEditField(field);
+    setEditLabel(labels[field] || field);
+    setEditValue(currentValue || '');
+    setEditModal(true);
+  };
+
+  // Save single field to Firestore
+  const handleFieldSave = async () => {
+    if (!authUser || !editField) return;
+    setEditSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', authUser.uid), {
+        [editField]: editValue.trim(),
+      });
+      setEditModal(false);
+    } catch (err) {
+      console.log('Field save error:', err);
+      Alert.alert('Error', 'Could not save. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // Open document verification modal
+  const handleVerify = () => {
+    if (!authUser) { router.push('/login'); return; }
+    setDocType(userData.verification?.type || '');
+    setDocImage(userData.verification?.imageUrl || null);
+    setDocModal(true);
+  };
+
+  // Pick document image
+  const handlePickDocImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setDocImage(result.assets[0].uri);
+    }
+  };
+
+  // Submit document verification
+  const handleDocSubmit = async () => {
+    if (!authUser || !docType) {
+      Alert.alert('Select Document', 'Please select a document type.');
       return;
     }
-    router.push('/complete-profile');
+    setDocSaving(true);
+    try {
+      let imageUrl = docImage;
+
+      // Upload image if it's a local file (not already a URL)
+      if (docImage && !docImage.startsWith('http')) {
+        const response = await fetch(docImage);
+        const blob = await response.blob();
+        const storageRef = ref(storage, `verification/${authUser.uid}/${docType}_${Date.now()}`);
+        await uploadBytes(storageRef, blob);
+        imageUrl = await getDownloadURL(storageRef);
+      }
+
+      await updateDoc(doc(db, 'users', authUser.uid), {
+        verification: {
+          type: docType,
+          imageUrl: imageUrl || '',
+          status: 'pending',
+          submittedAt: Timestamp.now(),
+        },
+      });
+
+      setDocModal(false);
+      Alert.alert('Submitted!', 'Your document has been submitted for verification.');
+    } catch (err) {
+      console.log('Doc submit error:', err);
+      Alert.alert('Error', 'Could not submit document. Please try again.');
+    } finally {
+      setDocSaving(false);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -237,14 +333,8 @@ export default function ProfilePage() {
   };
 
   const handleTabChange = (tab: string) => {
-    if (tab === 'settings') {
-      router.push('/settings' as any);
-      return;
-    }
-    if (tab === 'help') {
-      router.push('/help' as any);
-      return;
-    }
+    if (tab === 'settings') { router.push('/settings' as any); return; }
+    if (tab === 'help') { router.push('/help' as any); return; }
     setActiveTab(tab);
   };
 
@@ -254,7 +344,7 @@ export default function ProfilePage() {
 
   const TAB_LABELS: Record<string, string> = {
     info: "👤 Info",
-    activity: "📋 Activity",
+    activity: "📦 Bookings",
     wallet: "💰 Wallet",
     settings: "⚙️ Settings",
     help: "❓ Help",
@@ -273,10 +363,7 @@ export default function ProfilePage() {
       return (
         <View className="p-10 items-center">
           <Text className="text-gray-400 text-center mb-4">Please login to access this section</Text>
-          <TouchableOpacity
-            onPress={() => router.push('/login')}
-            className="bg-u-navy px-6 py-2.5 rounded-full"
-          >
+          <TouchableOpacity onPress={() => router.push('/login')} className="bg-u-navy px-6 py-2.5 rounded-full">
             <Text className="text-white text-sm font-semibold">Login</Text>
           </TouchableOpacity>
         </View>
@@ -285,7 +372,7 @@ export default function ProfilePage() {
 
     switch (activeTab) {
       case 'info':
-        return <InfoSection user={userData} onEdit={handleEditProfile} onLogout={logout} onDelete={handleDeleteAccount} />;
+        return <InfoSection user={userData} onEdit={handleFieldEdit} onVerify={handleVerify} onLogout={logout} onDelete={handleDeleteAccount} />;
       case 'activity':
         return bookings.length > 0
           ? <BookingsList bookings={bookings} isPartner={isPartner} />
@@ -302,13 +389,6 @@ export default function ProfilePage() {
         return listings.length > 0
           ? <ListingsList listings={listings} />
           : <EmptyState message="No listings yet. Create your first listing!" icon="📌" />;
-      case 'settings':
-      case 'help':
-        return (
-          <View className="p-10 items-center">
-            <Text className="text-gray-400">Section coming soon</Text>
-          </View>
-        );
       default:
         return null;
     }
@@ -326,12 +406,11 @@ export default function ProfilePage() {
   return (
     <SafeAreaView className={`flex-1 ${isPartner ? 'bg-p-bg' : 'bg-u-bg'}`} edges={['top']}>
       <View className="flex-1">
-        {/* Header - Back Button & Title */}
+        {/* Header */}
         <View className="px-5 pt-2 flex-row justify-between items-center">
           <TouchableOpacity
             onPress={() => router.back()}
-            className={`w-[38px] h-[38px] rounded-xl border items-center justify-center ${isPartner ? 'bg-white border-p-border' : 'bg-white border-u-border'
-              }`}
+            className={`w-[38px] h-[38px] rounded-xl border items-center justify-center ${isPartner ? 'bg-white border-p-border' : 'bg-white border-u-border'}`}
           >
             <Text className={`text-lg ${isPartner ? 'text-p-text' : 'text-u-navy'}`}>←</Text>
           </TouchableOpacity>
@@ -341,42 +420,98 @@ export default function ProfilePage() {
           </Text>
 
           <TouchableOpacity
-            className={`px-3.5 py-1.5 rounded-full ${isPartner ? 'bg-p-amber-soft' : 'bg-u-navy'
-              }`}
+            className={`px-3.5 py-1.5 rounded-full ${isPartner ? 'bg-p-amber-soft' : 'bg-u-navy'}`}
             onPress={handleEditProfile}
           >
-            <Text className={`text-xs font-semibold ${isPartner ? 'text-p-amber' : 'text-white'
-              }`}>{authUser ? 'Edit' : 'Login'}</Text>
+            <Text className={`text-xs font-semibold ${isPartner ? 'text-p-amber' : 'text-white'}`}>{authUser ? 'Edit' : 'Login'}</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <ProfileHero
-            user={userData}
-            isPartner={isPartner}
-            onEdit={handleEditProfile}
-            onPhotoUpload={handleEditProfile}
-          />
-
+          <ProfileHero user={userData} isPartner={isPartner} onEdit={handleEditProfile} onPhotoUpload={handleEditProfile} />
           <StatsRow isPartner={isPartner} stats={isPartner ? partnerStats : userStats} />
-
-          <ModeSwitch isPartner={isPartner} onSwitch={(val) => {
-            setIsPartner(val);
-            setActiveTab(val ? 'dashboard' : 'info');
-          }} />
-
-          <SectionTabs
-            tabs={currentTabs}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            isPartner={isPartner}
-            tabLabels={TAB_LABELS}
-            hasLeads={leads.length > 0}
-          />
-
+          <ModeSwitch isPartner={isPartner} onSwitch={(val) => { setIsPartner(val); setActiveTab(val ? 'dashboard' : 'info'); }} />
+          <SectionTabs tabs={currentTabs} activeTab={activeTab} onTabChange={handleTabChange} isPartner={isPartner} tabLabels={TAB_LABELS} hasLeads={leads.length > 0} />
           {renderContent()}
         </ScrollView>
       </View>
+
+      {/* Inline Edit Modal */}
+      <Modal visible={editModal} transparent animationType="fade" onRequestClose={() => setEditModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+          <TouchableOpacity activeOpacity={1} onPress={() => setEditModal(false)} className="flex-1 bg-black/50 justify-end">
+            <TouchableOpacity activeOpacity={1} onPress={() => { }} className="bg-white rounded-t-3xl p-6">
+              <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
+              <Text className="text-lg font-bold text-u-navy mb-4">Edit {editLabel}</Text>
+              <TextInput
+                className="border border-gray-300 rounded-xl p-4 bg-gray-50 text-base mb-4"
+                placeholder={`Enter ${editLabel.toLowerCase()}`}
+                value={editValue}
+                onChangeText={setEditValue}
+                autoFocus
+              />
+              <View className="flex-row gap-3">
+                <TouchableOpacity onPress={() => setEditModal(false)} className="flex-1 border border-gray-300 rounded-xl py-3.5 items-center">
+                  <Text className="text-gray-600 font-semibold">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleFieldSave} disabled={editSaving} className={`flex-1 bg-u-navy rounded-xl py-3.5 items-center ${editSaving ? 'opacity-60' : ''}`}>
+                  {editSaving ? <ActivityIndicator color="white" size="small" /> : <Text className="text-white font-semibold">Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Document Verification Modal */}
+      <Modal visible={docModal} transparent animationType="fade" onRequestClose={() => setDocModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+          <TouchableOpacity activeOpacity={1} onPress={() => setDocModal(false)} className="flex-1 bg-black/50 justify-end">
+            <TouchableOpacity activeOpacity={1} onPress={() => { }} className="bg-white rounded-t-3xl p-6">
+              <View className="w-10 h-1 bg-gray-300 rounded-full self-center mb-4" />
+              <Text className="text-lg font-bold text-u-navy mb-1">Identity Verification</Text>
+              <Text className="text-xs text-gray-400 mb-4">Optional — upload a document for verification</Text>
+
+              {/* Document Type Selector */}
+              <Text className="text-sm font-semibold text-u-text mb-2">Document Type</Text>
+              <View className="flex-row flex-wrap gap-2 mb-4">
+                {DOC_TYPES.map((dt) => (
+                  <TouchableOpacity
+                    key={dt.key}
+                    onPress={() => setDocType(dt.key)}
+                    className={`px-4 py-2.5 rounded-xl border ${docType === dt.key ? 'bg-u-navy border-u-navy' : 'bg-gray-50 border-gray-200'}`}
+                  >
+                    <Text className={`text-sm font-medium ${docType === dt.key ? 'text-white' : 'text-gray-600'}`}>{dt.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Image Upload */}
+              <Text className="text-sm font-semibold text-u-text mb-2">Document Image</Text>
+              <TouchableOpacity onPress={handlePickDocImage} className="border-2 border-dashed border-gray-300 rounded-xl p-4 items-center justify-center mb-4 bg-gray-50" style={{ minHeight: 120 }}>
+                {docImage ? (
+                  <Image source={{ uri: docImage }} className="w-full h-28 rounded-lg" resizeMode="contain" />
+                ) : (
+                  <View className="items-center">
+                    <Text className="text-3xl mb-1">📷</Text>
+                    <Text className="text-sm text-gray-400">Tap to upload photo</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* Buttons */}
+              <View className="flex-row gap-3">
+                <TouchableOpacity onPress={() => setDocModal(false)} className="flex-1 border border-gray-300 rounded-xl py-3.5 items-center">
+                  <Text className="text-gray-600 font-semibold">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleDocSubmit} disabled={docSaving} className={`flex-1 bg-u-navy rounded-xl py-3.5 items-center ${docSaving ? 'opacity-60' : ''}`}>
+                  {docSaving ? <ActivityIndicator color="white" size="small" /> : <Text className="text-white font-semibold">Submit</Text>}
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }

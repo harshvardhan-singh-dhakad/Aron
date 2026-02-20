@@ -172,7 +172,7 @@ export default function CompleteProfilePage() {
             if (redirect) {
                 router.replace(redirect as any);
             } else {
-                router.replace('/');
+                router.replace('/profile');
             }
 
         } catch (error) {
