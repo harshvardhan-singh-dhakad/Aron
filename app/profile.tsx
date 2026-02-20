@@ -18,6 +18,7 @@ import { BookingsList } from '../components/profile/BookingsList';
 import { PartnerDashboard } from '../components/profile/PartnerDashboard';
 import { LeadsList } from '../components/profile/LeadsList';
 import { ListingsList } from '../components/profile/ListingsList';
+import { PartnerRegistrationModal } from '../components/profile/PartnerRegistrationModal';
 
 // Default Guest User
 const GUEST_USER = {
@@ -63,6 +64,9 @@ export default function ProfilePage() {
   const [docImage, setDocImage] = useState<string | null>(null);
   const [docSaving, setDocSaving] = useState(false);
 
+  // Partner Registration modal state
+  const [partnerRegVisible, setPartnerRegVisible] = useState(false);
+
   const DOC_TYPES = [
     { key: 'aadhaar', label: 'Aadhaar Card' },
     { key: 'pan', label: 'PAN Card' },
@@ -94,6 +98,8 @@ export default function ProfilePage() {
           profession: data.profession || "",
           rating: data.rating || 0,
           reviews: data.reviewCount || 0,
+          partnerStatus: data.partnerStatus || 'inactive',
+          isPartnerRegistered: data.isPartnerRegistered || false,
         });
         setUserStats(prev => ({ ...prev, reviews: data.reviewCount || 0 }));
       }
@@ -292,7 +298,7 @@ export default function ProfilePage() {
       if (docImage && !docImage.startsWith('http')) {
         const response = await fetch(docImage);
         const blob = await response.blob();
-        const storageRef = ref(storage, `verification/${authUser.uid}/${docType}_${Date.now()}`);
+        const storageRef = ref(storage, `verifications/${authUser.uid}/${docType}_${Date.now()}`);
         await uploadBytes(storageRef, blob);
         imageUrl = await getDownloadURL(storageRef);
       }
@@ -330,6 +336,29 @@ export default function ProfilePage() {
         }
       ]
     );
+  };
+
+  const handleToggleMode = (toPartner: boolean) => {
+    if (!authUser) { router.push('/login'); return; }
+
+    if (toPartner) {
+      if (userData.partnerStatus === 'active') {
+        setIsPartner(true);
+        setActiveTab('dashboard');
+      } else if (userData.partnerStatus === 'pending') {
+        Alert.alert(
+          "Review in Progress",
+          "Your partner registration is being reviewed. We'll notify you once it's active!",
+          [{ text: "Okay" }]
+        );
+      } else {
+        // Not registered or inactive
+        setPartnerRegVisible(true);
+      }
+    } else {
+      setIsPartner(false);
+      setActiveTab('info');
+    }
   };
 
   const handleTabChange = (tab: string) => {
@@ -379,16 +408,37 @@ export default function ProfilePage() {
           : <EmptyState message="No bookings yet" icon="📋" />;
       case 'wallet':
         return <WalletSection wallet={walletData} transactions={transactions} />;
+
+      // Partner Tabs - Restricted if pending
       case 'dashboard':
-        return <PartnerDashboard stats={partnerStats} leads={leads} listings={listings} onAction={() => { }} />;
       case 'leads':
-        return leads.length > 0
-          ? <LeadsList leads={leads} />
-          : <EmptyState message="No leads yet" icon="🔔" />;
       case 'listings':
-        return listings.length > 0
-          ? <ListingsList listings={listings} />
-          : <EmptyState message="No listings yet. Create your first listing!" icon="📌" />;
+        if (userData.partnerStatus === 'pending') {
+          return (
+            <View className="flex-1 p-8 items-center justify-center">
+              <View className="w-24 h-24 bg-p-amber-soft rounded-full items-center justify-center mb-6">
+                <Text className="text-5xl">⏳</Text>
+              </View>
+              <Text className="text-2xl font-bold text-gray-800 text-center mb-2">Registration Under Review</Text>
+              <Text className="text-gray-500 text-center leading-5 mb-8">
+                Your application to become a partner is being reviewed by our team.
+                We'll notify you once your account is active!
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsPartner(false)}
+                className="bg-u-navy px-8 py-3.5 rounded-xl"
+              >
+                <Text className="text-white font-bold">Go Back to User Mode</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }
+
+        if (activeTab === 'dashboard') return <PartnerDashboard stats={partnerStats} leads={leads} listings={listings} onAction={() => { }} />;
+        if (activeTab === 'leads') return leads.length > 0 ? <LeadsList leads={leads} /> : <EmptyState message="No leads yet" icon="🔔" />;
+        if (activeTab === 'listings') return listings.length > 0 ? <ListingsList listings={listings} /> : <EmptyState message="No listings yet" icon="📌" />;
+        return null;
+
       default:
         return null;
     }
@@ -430,7 +480,7 @@ export default function ProfilePage() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <ProfileHero user={userData} isPartner={isPartner} onEdit={handleEditProfile} onPhotoUpload={handleEditProfile} />
           <StatsRow isPartner={isPartner} stats={isPartner ? partnerStats : userStats} />
-          <ModeSwitch isPartner={isPartner} onSwitch={(val) => { setIsPartner(val); setActiveTab(val ? 'dashboard' : 'info'); }} />
+          <ModeSwitch isPartner={isPartner} onSwitch={handleToggleMode} />
           <SectionTabs tabs={currentTabs} activeTab={activeTab} onTabChange={handleTabChange} isPartner={isPartner} tabLabels={TAB_LABELS} hasLeads={leads.length > 0} />
           {renderContent()}
         </ScrollView>
@@ -512,6 +562,17 @@ export default function ProfilePage() {
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
+      {/* Partner Registration Modal */}
+      <PartnerRegistrationModal
+        visible={partnerRegVisible}
+        onClose={() => setPartnerRegVisible(false)}
+        user={{ uid: authUser?.uid, ...userData }}
+        onSuccess={() => {
+          setPartnerRegVisible(false);
+          setIsPartner(true);
+          setActiveTab('dashboard');
+        }}
+      />
     </SafeAreaView>
   );
 }
