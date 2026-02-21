@@ -19,19 +19,9 @@ export default function LoginPage() {
     const [isSending, setIsSending] = useState(false);
     const [timer, setTimer] = useState(30);
 
-    // Initialize Recaptcha
+    // Initialize Recaptcha (Handled in handleSendOtp now)
     useEffect(() => {
-        if (step === 'phone' && Platform.OS === 'web') {
-            try {
-                if (!(window as any).recaptchaVerifier) {
-                    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                        'size': 'invisible',
-                    });
-                }
-            } catch (err) {
-                console.error("Recaptcha Init Error", err);
-            }
-        }
+        // Any other phone-mount side effects can go here
     }, [step]);
 
     // OTP Timer
@@ -52,45 +42,56 @@ export default function LoginPage() {
 
         setIsSending(true);
         try {
-            const formattedPhoneNumber = `+91${cleanedPhone.slice(-10)}`; // Assuming India (+91)
+            const formattedPhoneNumber = `+91${cleanedPhone.slice(-10)}`;
+            console.log("Attempting to send OTP to:", formattedPhoneNumber);
 
             let appVerifier: any;
 
             if (Platform.OS === 'web') {
+                // Ensure a clean recaptcha container
+                const container = document.getElementById('recaptcha-container');
+                if (!container) {
+                    throw new Error("Recaptcha container not found in DOM");
+                }
+
                 if (!(window as any).recaptchaVerifier) {
+                    console.log("Initializing RecaptchaVerifier...");
                     (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                         'size': 'invisible',
+                        'callback': (response: any) => {
+                            console.log("Recaptcha solved");
+                        },
+                        'expired-callback': () => {
+                            console.log("Recaptcha expired");
+                        }
                     });
                 }
                 appVerifier = (window as any).recaptchaVerifier;
-            } else {
-                // For native, reCAPTCHA is handled differently or auto-verified via SafetyNet/Play Integrity
-                // Expo Go might require a slightly different setup without proper native config.
-                // Assuming standard behaviour or fallback.
-                // For this dev step, we'll try standard flow, but native might need explicit verifier ref.
-                // Note: Expo Go doesn't support native Firebase Phone Auth reCAPTCHA easily.
-                // It often falls back to web-based flow or requires a development build.
-                // Proceeding with web consideration primarily as per context.
-                // If native fails, user might need development build.
             }
 
+            console.log("Calling signInWithPhoneNumber...");
             const confirmationResult = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
+            console.log("OTP sent successfully!");
+
             setVerificationId(confirmationResult.verificationId);
             setStep('otp');
             setTimer(30);
             if (Platform.OS === 'web') (window as any).confirmationResult = confirmationResult;
 
         } catch (error: any) {
-            console.error("SMS Error:", error);
+            console.error("SMS Error Detail:", error);
             let errorMessage = error.message;
             if (error.code === 'auth/invalid-phone-number') errorMessage = 'The phone number is invalid.';
             else if (error.code === 'auth/too-many-requests') errorMessage = 'Too many requests. Please try again later.';
             else if (error.code === 'auth/quota-exceeded') errorMessage = 'SMS quota exceeded.';
+            else if (error.code === 'auth/captcha-check-failed') errorMessage = 'reCAPTCHA check failed. Please refresh and try again.';
 
-            Alert.alert("Login Failed", errorMessage);
+            Alert.alert("Login Failed", `${errorMessage} (${error.code || 'unknown'})`);
 
             if (Platform.OS === 'web' && (window as any).recaptchaVerifier) {
-                (window as any).recaptchaVerifier.clear();
+                try {
+                    (window as any).recaptchaVerifier.clear();
+                } catch (e) { }
                 (window as any).recaptchaVerifier = null;
             }
         } finally {
